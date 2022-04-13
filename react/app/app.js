@@ -29,7 +29,7 @@ var host = io.of('/host');
 // app variables
 var appBallot = {};
 var appCategories = require('./categories');
-var appContestants = require('./contestants/2021');
+var appContestants = require('./contestants/2022');
 // var appHost = hostID();
 var appVoters = [];
 
@@ -93,7 +93,8 @@ const getApiAndEmit = socket => {
 client.on('connection', (socket) => {
   console.log('[Client] Connected');
   
-  socket.emit('clientFoo', 'Hello, world!');
+  socket.emit('getCategories', appCategories);
+  socket.emit('getContestants', appContestants);
 
   socket.on('disconnect', () => {
     console.log('[Client] Disconnected');
