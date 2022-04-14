@@ -31,7 +31,7 @@ function App() {
       key: 'total',
       showSorterTooltip: false,
       sorter: (a, b) => a.total - b.total,
-      title: 'Total Score',
+      title: 'Total',
     },
     Table.EXPAND_COLUMN,
   ];
