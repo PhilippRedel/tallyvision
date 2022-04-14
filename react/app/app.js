@@ -68,33 +68,21 @@ app.use(function(err, req, res, next) {
 
 
 
-let interval;
-
-io.on("connection", (socket) => {
-  console.log("New client connected");
-  if (interval) {
-    clearInterval(interval);
-  }
-  interval = setInterval(() => getApiAndEmit(socket), 1000);
-  socket.on("disconnect", () => {
-    console.log("Client disconnected");
-    clearInterval(interval);
-  });
-});
-
-const getApiAndEmit = socket => {
-  const response = new Date();
-  // Emitting a new message. Will be consumed by the client
-  socket.emit("FromAPI", response);
-};
-
-
-
 client.on('connection', (socket) => {
   console.log('[Client] Connected');
   
   socket.emit('getCategories', appCategories);
   socket.emit('getContestants', appContestants);
+
+  socket.on('clientRatingSubmit', (values) => {
+    console.log('[Client] Submitted rating:', values);
+
+    socket.emit('appBallotTallied', '[App] Ballot tallied');
+  });
+
+  socket.on('clientGNBB', () => {
+    console.log('[Client] Pressed GNBB');
+  });
 
   socket.on('disconnect', () => {
     console.log('[Client] Disconnected');
