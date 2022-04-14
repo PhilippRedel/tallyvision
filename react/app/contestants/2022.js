@@ -1,4 +1,4 @@
-var contestants = [
+const contestants = [
   {
     key: 1,
     country: 'Albania',

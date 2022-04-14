@@ -1,27 +1,23 @@
-var categories = [
+const categories = [
   {
-    title: 'song',
+    key: 'song',
+    label: 'Song',
     max: 5,
-    labelmax: 'Totally slaps',
-    labelmin: 'Absolute crap',
   },
   {
-    title: 'performance',
+    key: 'performance',
+    label: 'Performance',
     max: 5,
-    labelmax: 'ABBA in 1974',
-    labelmin: '"Imagine" COVID version',
   },
   {
-    title: 'staging',
+    key: 'staging',
+    label: 'Staging',
     max: 5,
-    labelmax: 'Final Destination',
-    labelmin: 'Pac-Land',
   },
   {
-    title: 'wardrobe',
+    key: 'wardrobe',
+    label: 'Wardrobe',
     max: 5,
-    labelmax: 'Nice drip',
-    labelmin: 'What are those?!',
   },
 ];
 
