@@ -1,34 +1,60 @@
 @import '~antd/dist/antd.less';
 
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600&display=swap');
+
+body {
+  font-family: 'Rubik', sans-serif;
+  max-width: 786px;
+  min-width: 320px;
+
+  @media ( min-width: 768px ) {
+    margin: auto;
+    padding: 1rem;
+  }
+}
+
+.ant-table-column-sorter {
+  margin-left: 8px;
+}
+
+.btn-gnbb {
+  margin: 1rem auto;
+}
+
+.tv-column__total {
+  white-space: nowrap;
+  width: 1%;
+}
+
 .tv-contestantDetails {
   &__content {
     h5 {
-      margin-bottom: 0.25em;
+      margin-bottom: 0;
     }
   }
 
   &__flag {
-    margin-right: 24px;
+    margin-right: 14px;
+    width: 100%;
   }
 }
 
 .tv-ratingForm {
   .ant-rate {
     display: flex;
+    justify-content: space-between;
   }
 
   .ant-rate-star {
-    flex: 1;
-    text-align: center;
+    display: flex;
 
-    svg,
-    .anticon {
+    .anticon svg {
       height: 2.5em;
       width: 2.5em;
     }
 
     &:not(:last-child) {
-      margin-right: 16px;
+      margin-right: 0;
     }
   }
 }
@@ -36,5 +62,15 @@
 .tv-ratingSummary {
   &__title {
     display: block;
+  }
+}
+
+.tv-uiPreview {
+  background: linear-gradient( to top right, #9254de, #f759ab ) fixed no-repeat;
+  padding: 1rem;
+
+  @media ( min-width: 768px ) {
+    border-radius: 2rem;
+    margin: auto;
   }
 }
