@@ -1,22 +1,6 @@
-import { useContext } from 'react';
 import { Button, Divider, Form, Rate } from 'antd';
-import { ClientSocket } from '../context/ClientSocket';
 
-export default function BallotForm({ categories }) {
-
-  // variables
-  const socket = useContext(ClientSocket);
-
-  // functions
-  const ratingError = (errorInfo) => {
-    console.log('Failed:', errorInfo);
-  };
-
-  const ratingSubmit = (values) => {
-    console.log('Submitting rating:', values);
-
-    socket.emit('clientRatingSubmit', values);
-  };
+export default function RatingForm({ categories, onFinish, onFinishFailed }) {
 
   // component
   return (
@@ -24,8 +8,8 @@ export default function BallotForm({ categories }) {
       autoComplete="off"
       className="tv-ratingForm"
       name="tv_ratingForm"
-      onFinish={ratingSubmit}
-      onFinishFailed={ratingError}
+      onFinish={onFinish}
+      onFinishFailed={onFinishFailed}
     >
       {categories.map((category) => (
         <div className="tv-ratingForm__category" key={category.key}>
