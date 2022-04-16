@@ -11,7 +11,7 @@ var routerHost = require('./routes/host');
 // server
 var app = express();
 var server = require('http').createServer(app);
-var io = require("socket.io")(server, {
+var io = require('socket.io')(server, {
   cors: {
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST']
@@ -74,10 +74,9 @@ client.on('connection', (socket) => {
   socket.emit('getCategories', appCategories);
   socket.emit('getContestants', appContestants);
 
-  socket.on('clientRatingSubmit', (values) => {
-    console.log('[Client] Submitted rating:', values);
-
-    socket.emit('appBallotTallied', '[App] Ballot tallied');
+  socket.on('clientBallotSubmit', (contestant, values) => {
+    console.log('[Client] Submitted ballot:', contestant, values);
+    socket.emit('appBallotTally', '[App] Ballot tallied');
   });
 
   socket.on('clientGNBB', () => {
