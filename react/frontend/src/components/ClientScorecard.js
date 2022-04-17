@@ -34,6 +34,7 @@ export default function ClientScorecard({ categories, contestants }) {
   return (
     <Table
       bordered={false}
+      className="tv-clientScorecard"
       columns={columns}
       dataSource={contestants}
       expandable={{
@@ -53,7 +54,6 @@ export default function ClientScorecard({ categories, contestants }) {
         ),
         // rowExpandable: (record) => record.total,
       }}
-      id="clientScorecard"
       pagination={false}
     />
   );
