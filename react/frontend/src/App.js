@@ -15,8 +15,8 @@ function App() {
   const [contestants, setContestants] = useState([]);
 
   useEffect(() => {
-    socket.on('appBallotTally', (data) => {
-      console.log(data);
+    socket.on('appBallotCounted', (values) => {
+      console.log(values);
     });
     
     socket.on('getCategories', (data) => {
