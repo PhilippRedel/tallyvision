@@ -1,40 +1,34 @@
-var createError = require('http-errors');
-var express = require('express');
-var path = require('path');
-var cookieParser = require('cookie-parser');
-var logger = require('morgan');
+const createError = require('http-errors');
+const express = require('express');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+const logger = require('morgan');
 
 // routers
-var routerClient = require('./routes/client');
-var routerHost = require('./routes/host');
+const routerClient = require('./routes/client');
+const routerHost = require('./routes/host');
 
 // server
-var app = express();
-var server = require('http').createServer(app);
-var io = require('socket.io')(server, {
+const app = express();
+const server = require('http').createServer(app);
+
+// socket.io 
+const io = require('socket.io')(server, {
   cors: {
     origin: 'http://localhost:3000',
     methods: ['GET', 'POST']
   }
 });
-
-// socket.io 
-var client = io.of('/client');
-var host = io.of('/host');
+const ioClient = io.of('/client');
+const ioHost = io.of('/host');
 
 // database
-// var sqlite3 = require('sqlite3');
-// var db = new sqlite3.Database('./' + new Date().toISOString().substring(0, 10) + '.db');
+const sqlite3 = require('sqlite3');
+const db = new sqlite3.Database('./db/' + new Date().toISOString().substring(0, 10) + '.db');
 
-// app variables
-var appBallot = {};
-var appCategories = require('./categories');
-var appContestants = require('./contestants/2022');
-// var appHost = hostID();
-var appVoters = [];
-
-app.set('categories', appCategories);
-app.set('contestants', appContestants);
+// app data
+const tvCategories = require('./data/categories');
+const tvContestants = require('./data/contestants/2022');
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -45,38 +39,42 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', routerClient);
-// app.use('/' + appHost, routerHost);
+app.use('/host', routerHost);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use((req, res, next) => {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
-  // set locals, only providing error in development
-  res.locals.error = req.app.get('env') === 'development' ? err : {};
-  res.locals.message = err.message;
+app.use((err, req, res, next) => {
   res.locals.status = err.status || 500;
 
-  // send error response
   res.send({
     status: res.locals.status,
-    message: res.locals.message,
+    message: err.message,
   }).status(res.locals.status);
 });
 
+// app variables
+var tvBallot = {
+  status: 'closed',
+  contestant: [],
+};
+var tvClients = [];
+var tvHostPin = hostPin();
 
 
-client.on('connection', (socket) => {
+
+ioClient.on('connection', (socket) => {
   console.log('[Client] Connected');
   
-  socket.emit('getCategories', appCategories);
-  socket.emit('getContestants', appContestants);
+  socket.emit('getCategories', tvCategories);
+  socket.emit('getContestants', tvContestants);
 
-  socket.on('clientBallotSubmit', (contestant, values) => {
-    console.log('[Client] Submitted ballot:', contestant, values);
-    socket.emit('appBallotTally', '[App] Ballot tallied');
+  socket.on('clientBallotSubmit', (values) => {
+    console.log('[Client] Submitted ballot:', [socket, values]);
+    dbInsertVote();
   });
 
   socket.on('clientGNBB', () => {
@@ -87,6 +85,167 @@ client.on('connection', (socket) => {
     console.log('[Client] Disconnected');
   });
 });
+
+// initialize app
+function __init() {
+  dbCreateTables();
+  console.log('Host access pin:', tvHostPin);
+}
+
+// create database tables
+function dbCreateTables() {
+  var columns, gnbp, votes;
+
+  // gnbb table
+  gnbp  = `CREATE TABLE IF NOT EXISTS gnbb (`;
+  gnbp += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
+  gnbp += `voter_name TEXT NOT NULL,`;
+  gnbp += `contestant_code TEXT NOT NULL);`;
+
+  db.run(gnbp, (err) => {
+    if (err) {
+      console.log('[DB] Error when creating table:', err);
+    } else {
+      console.log('[DB] Created table "GNBP"');
+    }
+  });
+
+  // votes table
+  columns = tvCategories.map((category) => {
+    return `cat_${category.key} INTEGER NOT NULL`;
+  }).join(`,`);
+
+  votes  = `CREATE TABLE IF NOT EXISTS votes (`;
+  votes += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
+  votes += `voter_name TEXT NOT NULL,`;
+  votes += `contestant_code TEXT NOT NULL,`;
+  votes += `${columns},`
+  votes += `total INTEGER NOT NULL);`;
+
+  db.run(votes, (err) => {
+    if (err) {
+      console.log('[DB] Error when creating table:', err);
+    } else {
+      console.log('[DB] Created table "VOTES"');
+    }
+  });
+}
+
+// insert Graham Norton bitch point record for voter and contestant
+function dbInsertGNBP(socket) {
+  var query = `INSERT INTO gnbp (voter_name,contestant_code) VALUES (?,?)`;
+  var values = [socket.name, tvBallot.code];
+
+  db.run(query, values, (err) => {
+    if (err) {
+      console.log('[DB] Error inserting record:', err);
+    }
+  });
+}
+
+// add vote record for client and current contestant
+function dbInsertVote(socket, scores) {
+  var cat_columns, cat_placeholders, query, total;
+  var values = [socket.name, tvBallot.code].concat(scores);
+
+  cat_columns = tvCategories.map((category) => {
+    return `cat_${category.key}`;
+  }).join(`,`);
+
+  cat_placeholders = tvCategories.map(() => {
+    return `?`;
+  }).join(`,`);
+
+  query  = `INSERT INTO votes (`;
+  query += `voter_name,`;
+  query += `contestant_code,`;
+  query += `${cat_columns},`;
+  query += `score) VALUES (?,?,${cat_placeholders},?);`;
+
+  total = scores.reduce((a, b) => {
+    return a + b;
+  }, 0);
+
+  values.push(total);
+
+  db.run(query, values, (err) => {
+    if (err) {
+      console.log('[DB] Error inserting record:', err);
+    } else {
+      tvClientIndex(socket, (i) => {
+        if (i > -1) {
+          tvClients[i].voted = true;
+        }
+      });
+
+      socket.emit('appBallotCounted', values);
+    }
+  });
+}
+
+// get category score for all contestants 
+function dbQueryCategory(category_key, callback) {
+  var query;
+  
+  query  = `SELECT contestant_code,`;
+  query += `COUNT(voter_name) votes,`;
+  query += `SUM(cat_${category_key}) score FROM votes GROUP BY contestant_code ORDER BY score DESC;`;
+
+  db.all(sql, (err, rows) => {
+    if (err) {
+      console.log('[DB] Error performing query:', err);
+    } else {
+      callback(rows);
+    }
+  });
+}
+
+// get Graham Norton bitch points for all contestants
+function dbQueryGNBP(callback) {
+  var query;
+  
+  query  = `SELECT contestant_code,`;
+  query += `COUNT(voter_name) score FROM gnbp GROUP BY contestant_code ORDER BY score DESC;`;
+
+  db.all(query, (err, rows) => {
+    if (err) {
+      console.log('[DB] Error performing query:', err);
+    } else {
+      callback(rows);
+    }
+  });
+}
+
+// get total score for all contestants
+function dbQueryTotal(callback) {
+  var query;
+  
+  query  = `SELECT contestant_code,`;
+  query += `COUNT(voter_name) votes,`;
+  query += `SUM(total) total FROM votes GROUP BY contestant_code ORDER BY total DESC;`;
+
+  db.all(query, (err, rows) => {
+    if (err) {
+      console.log('[DB] Error performing query:', err);
+    } else {
+      callback(rows);
+    }
+  });
+}
+
+// get app index for client
+function tvClientIndex(socket, callback) {
+  callback(tvClients.findIndex((a) => {
+    return a.name === socket.name;
+  }));
+}
+
+// generate host pin code
+function hostPin() {
+  return Math.floor(1000 + Math.random() * 9000);
+}
+
+
 
 
 
@@ -130,7 +289,7 @@ client.on('connection', function(socket) {
 });
 
 // host events
-host.on('connection', function(socket) {
+ioHost.on('connection', function(socket) {
   if (!isEmpty(appBallot)) {
     host.emit('appBallotOpen', appBallot);
   } else {
@@ -261,7 +420,7 @@ function dbTableCreate() {
 
   db.run(gnbp, function(err) {});
 
-  columns = appCategories.map(function(category) {
+  columns = tvCategories.map(function(category) {
     return `category_` + category.title + ` INTEGER NOT NULL`;
   }).join(`,`);
 
@@ -287,11 +446,11 @@ function dbVoteInsert(socket, scores) {
   var columns, placeholders, sql, total;
   var values = [socket.name, appBallot.code].concat(scores);
 
-  columns = appCategories.map(function(category) {
+  columns = tvCategories.map(function(category) {
     return `category_` + category.title;
   }).join(`,`);
 
-  placeholders = appCategories.map(function() {
+  placeholders = tvCategories.map(function() {
     return `?`;
   }).join(`,`);
 
@@ -360,7 +519,7 @@ function hostBallotClose() {
 
 // emit ballot open events to all clients and host
 function hostBallotOpen(i) {
-  appBallot = appContestants[i];
+  appBallot = tvContestants[i];
 
   for (let [i, voter] of appVoters.entries()) {
     /* dbVoterSingle(voter, appBallot.code, function(voter, vote) {
@@ -398,10 +557,10 @@ function hostVoters() {
 
 // get defined category score for all contestants and emit events
 function pcaCategories() {
-  for (let [i, category] of appCategories.entries()) {
+  for (let [i, category] of tvCategories.entries()) {
     dbContestantCategory(category.title, function(scores) {
       for (let [i, score] of scores.entries()) {
-        scores[i].contestant = appContestants.find(function(a) {
+        scores[i].contestant = tvContestants.find(function(a) {
           return a.code === score.contestant;
         });
       }
@@ -415,7 +574,7 @@ function pcaCategories() {
 function pcaGNBP() {
   dbContestantGNBP(function(scores) {
     for (let [i, score] of scores.entries()) {
-      scores[i].contestant = appContestants.find(function(a) {
+      scores[i].contestant = tvContestants.find(function(a) {
         return a.code === score.contestant;
       });
     }
@@ -428,7 +587,7 @@ function pcaGNBP() {
 function pcaTotal() {
   dbContestantTotal(function(scores) {
     for (let [i, score] of scores.entries()) {
-      scores[i].contestant = appContestants.find(function(a) {
+      scores[i].contestant = tvContestants.find(function(a) {
         return a.code === score.contestant;
       });
     }
@@ -437,9 +596,9 @@ function pcaTotal() {
   });
 }
 
-__init();
-
 */
+
+__init();
 
 module.exports = {
   app: app,
