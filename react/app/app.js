@@ -50,10 +50,12 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   res.locals.status = err.status || 500;
 
-  res.send({
-    status: res.locals.status,
-    message: err.message,
-  }).status(res.locals.status);
+  res.send(
+    {
+      status: res.locals.status,
+      message: err.message,
+    }
+  ).status(res.locals.status);
 });
 
 // app variables
@@ -66,19 +68,31 @@ var tvHostPin = hostPin();
 
 
 
+ioClient.use((socket, next) => {
+  var auth = socket.handshake.auth;
+
+  if (auth.name) {
+    socket.name = auth.name.toLowerCase();
+  } else {
+    return next(new Error('missing name'));
+  }
+
+  next();
+});
+
 ioClient.on('connection', (socket) => {
   console.log('[Client] Connected');
   
   socket.emit('getCategories', tvCategories);
   socket.emit('getContestants', tvContestants);
 
-  socket.on('clientBallotSubmit', (values) => {
-    console.log('[Client] Submitted ballot:', [socket, values]);
-    dbInsertVote();
+  socket.on('clientPushGNBB', () => {
+    console.log('[Client] Pushed GNBB:', socket.id);
   });
 
-  socket.on('clientGNBB', () => {
-    console.log('[Client] Pressed GNBB');
+  socket.on('clientSubmitBallot', (values) => {
+    console.log('[Client] Submitted ballot:', [socket.id, values]);
+    dbInsertVote();
   });
 
   socket.on('disconnect', () => {
@@ -90,6 +104,27 @@ ioClient.on('connection', (socket) => {
 function __init() {
   dbCreateTables();
   console.log('Host access pin:', tvHostPin);
+}
+
+// update client list and emit client connection events
+function clientConnect(socket) {
+  tvClientIndex(socket, (i) => {
+    if (i > -1) {
+      tvClients[i].connected = true;
+    } else {
+      tvClients.push(
+        {
+          connected: true,
+          name: socket.name,
+          voted: false,
+        }
+      ).sort((a, b) => {
+        return (a.name > b.name) ? 1 : -1;
+      });
+    }
+  });
+
+  socket.emit('clientConnect', socket.name);
 }
 
 // create database tables
@@ -178,7 +213,7 @@ function dbInsertVote(socket, scores) {
         }
       });
 
-      socket.emit('appBallotCounted', values);
+      socket.emit('appCountBallot', values);
     }
   });
 }
@@ -233,16 +268,16 @@ function dbQueryTotal(callback) {
   });
 }
 
+// generate host pin code
+function hostPin() {
+  return Math.floor(1000 + Math.random() * 9000);
+}
+
 // get app index for client
 function tvClientIndex(socket, callback) {
   callback(tvClients.findIndex((a) => {
     return a.name === socket.name;
   }));
-}
-
-// generate host pin code
-function hostPin() {
-  return Math.floor(1000 + Math.random() * 9000);
 }
 
 
