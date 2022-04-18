@@ -4,21 +4,17 @@
 
 body {
   font-family: 'Rubik', sans-serif;
-  max-width: 640px;
   min-width: 320px;
-
-  @media ( min-width: 768px ) {
-    margin: auto;
-    padding: 1rem;
-  }
 }
 
 .ant-table-column-sorter {
   margin-left: 8px;
 }
 
-.btn-gnbb {
-  margin: 1rem auto;
+.tv-clientBallot,
+.tv-clientRegistration {
+  margin: auto;
+  max-width: 384px;
 }
 
 .tv-column__total {
@@ -40,13 +36,14 @@ body {
 }
 
 .tv-GNBB {
-  margin-top: 0;
-  text-align: center;
+  display: flex;
+  margin-top: 1rem;
+  justify-content: center;
 
   button {
-    border: 0;
-    background: none;
-    padding: 0;
+    height: auto;
+    padding: 2px;
+    transition: none;
 
     img {
       filter: drop-shadow( 0 0 1px rgba( 18, 3, 56, 0.75 ) );
@@ -54,7 +51,7 @@ body {
     }
 
     &:active {
-      transform: scale( 0.8 );
+      transform: scale( 0.875 );
     }
   }
 }
@@ -85,12 +82,30 @@ body {
   }
 }
 
-.tv-uiPreview {
-  background: linear-gradient( to top right, #f759ab, #9254de ) fixed no-repeat;
-  padding: 1rem;
+.tv-registrationForm {
+  h5 {
+    margin-bottom: 0;
+  }
 
-  @media ( min-width: 768px ) {
-    border-radius: 2rem;
-    margin: auto;
+  input {
+    text-transform: uppercase;
+  }
+
+  .ant-input-affix-wrapper {
+    border-radius: 0.334rem;
+  }
+}
+
+.tv-uiPreview {
+  background: linear-gradient( to top right, @magenta-5, @purple-5 ) fixed no-repeat;
+  padding: 1rem;
+  position: relative;
+
+  &.tv-uiPreview__client {
+    @media ( min-width: 640px ) {
+      border-radius: 2rem;
+      margin: auto;
+      max-width: 640px;
+    }
   }
 }

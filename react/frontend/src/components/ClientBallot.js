@@ -12,22 +12,24 @@ export default function ClientBallot({ categories, contestant }) {
   const socket = useContext(ClientSocket);
 
   // functions
-  const ballotSubmit = (values) => {
-    console.log('Submitted ballot:', contestant, values);
-    socket.emit('clientBallotSubmit', values);
+  const pushGNBB = () => {
+    console.log('Pushed GNBB:', contestant.code);
+    socket.emit('clientPushGNBB');
+  };
+
+  const submitBallot = (values) => {
+    console.log('Submitted ballot:', [contestant.code, values]);
+    socket.emit('clientSubmitBallot', values);
   };
 
   // component
   return (
     <div className="tv-clientBallot">
-      <Card
-        bordered={false}
-        style={{ margin: 'auto', maxWidth: 384 }}
-      >
+      <Card bordered={false}>
         <ContestantDetails contestant={contestant} />
-        <RatingForm categories={categories} onFinish={ballotSubmit} />
+        <RatingForm categories={categories} onFinish={submitBallot} />
       </Card>
-      <GNBB />
+      <GNBB onFinish={pushGNBB} />
     </div>
   );
 }

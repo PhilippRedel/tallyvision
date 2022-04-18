@@ -5,7 +5,6 @@ export default function RatingForm({ categories, onFinish, onFinishFailed }) {
   // component
   return (
     <Form
-      autoComplete="off"
       className="tv-ratingForm"
       name="tv_ratingForm"
       onFinish={onFinish}

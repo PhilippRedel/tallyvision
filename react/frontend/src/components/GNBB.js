@@ -1,9 +1,16 @@
-export default function GNBB() {
+import { Button, Form } from 'antd';
+
+export default function GNBB({ onFinish, onFinishFailed }) {
   return (
-    <div class="tv-GNBB">
-      <button type="button">
+    <Form
+      className="tv-GNBB"
+      name="tv_GNBB"
+      onFinish={onFinish}
+      onFinishFailed={onFinishFailed}
+    >
+      <Button htmlType="submit" type="link">
         <img alt="" src={process.env.PUBLIC_URL + '/media/gnbb.png'} />
-      </button>
-    </div>
+      </Button>
+    </Form>
   );
 }

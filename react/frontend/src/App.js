@@ -6,7 +6,11 @@ import { Divider } from 'antd';
 
 // ...
 import ClientBallot from './components/ClientBallot';
+import ClientRegistration from './components/ClientRegistration';
 import ClientScorecard from './components/ClientScorecard';
+
+// ...
+import HostDashboard from './components/HostDashboard';
 
 import './App.less';
 
@@ -15,8 +19,8 @@ function App() {
   const [contestants, setContestants] = useState([]);
 
   useEffect(() => {
-    socket.on('appBallotCounted', (values) => {
-      console.log(values);
+    socket.on('appCountBallot', (values) => {
+      console.log('[App] Counted ballot:', values);
     });
     
     socket.on('getCategories', (data) => {
@@ -30,8 +34,13 @@ function App() {
 
   return (
     <ClientSocket.Provider value={socket}>
+      <Divider orientation="left">Client registration</Divider>
+      <div className="tv-uiPreview tv-uiPreview__client">
+        <ClientRegistration />
+      </div>
+
       <Divider orientation="left">Client ballot</Divider>
-      <div className="tv-uiPreview">
+      <div className="tv-uiPreview tv-uiPreview__client">
         <ClientBallot
           categories={categories}
           contestant={
@@ -47,11 +56,16 @@ function App() {
       </div>
       
       <Divider orientation="left">Client scorecard</Divider>
-      <div className="tv-uiPreview">
+      <div className="tv-uiPreview tv-uiPreview__client">
         <ClientScorecard
           categories={categories}
           contestants={contestants}
         />
+      </div>
+
+      <Divider orientation="left">Host dashboard</Divider>
+      <div className="tv-uiPreview tv-uiPreview__host">
+        <HostDashboard />
       </div>
     </ClientSocket.Provider>
   );
