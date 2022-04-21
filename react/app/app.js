@@ -1,12 +1,11 @@
+const cookieParser = require('cookie-parser');
 const createError = require('http-errors');
 const express = require('express');
-const path = require('path');
-const cookieParser = require('cookie-parser');
 const logger = require('morgan');
+const path = require('path');
 
 // routers
-const routerClient = require('./routes/client');
-const routerHost = require('./routes/host');
+const router = require('./routes/api');
 
 // server
 const app = express();
@@ -26,20 +25,12 @@ const ioHost = io.of('/host');
 const sqlite3 = require('sqlite3');
 const db = new sqlite3.Database('./db/' + new Date().toISOString().substring(0, 10) + '.db');
 
-// app data
-const tvCategories = require('./data/categories');
-const tvContestants = require('./data/contestants/2022');
-
-app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({
-  extended: false,
-}));
+app.use('/', router);
 app.use(cookieParser());
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-app.use('/', routerClient);
-app.use('/host', routerHost);
+app.use(express.urlencoded({ extended: false }));
+app.use(logger('dev'));
 
 // catch 404 and forward to error handler
 app.use((req, res, next) => {
@@ -58,13 +49,17 @@ app.use((err, req, res, next) => {
   ).status(res.locals.status);
 });
 
+// app data
+const appCategories = require('./data/categories');
+const appContestants = require('./data/contestants/2022');
+
 // app variables
-var tvBallot = {
-  status: 'closed',
-  contestant: [],
+var appBallot = {
+  open: false,
+  contestant: {},
 };
-var tvClients = [];
-var tvHostPin = hostPin();
+var appClients = [];
+var appHostPin = hostPin();
 
 
 
@@ -81,50 +76,68 @@ ioClient.use((socket, next) => {
 });
 
 ioClient.on('connection', (socket) => {
-  console.log('[Client] Connected');
-  
-  socket.emit('getCategories', tvCategories);
-  socket.emit('getContestants', tvContestants);
+  clientRegister(socket);
+  hostClientsTable();
 
   socket.on('clientPushGNBB', () => {
-    console.log('[Client] Pushed GNBB:', socket.id);
+    console.log('[IO] Client pressed GNBB:', socket.id);
   });
 
-  socket.on('clientSubmitBallot', (values) => {
-    console.log('[Client] Submitted ballot:', [socket.id, values]);
-    dbInsertVote();
+  socket.on('clientSubmitBallot', (scores) => {
+    console.log('[IO] Client submitted ballot:', [socket.id, scores]);
+    dbInsertVote(socket, scores);
   });
 
-  socket.on('disconnect', () => {
-    console.log('[Client] Disconnected');
+  socket.on('disconnect', (reason) => {
+    clientIndex(socket, (i) => {
+      if (i > -1) {
+        appClients[i].connected = socket.connected;
+      }
+
+      console.log('[IO] Client disconnected:', [socket.name, reason]);
+    });
   });
 });
 
+ioHost.on('connection', (socket) => {
+  hostClientsTable();
+});
+
 // initialize app
-function __init() {
+function __initialize() {
   dbCreateTables();
-  console.log('Host access pin:', tvHostPin);
+  console.log('[TV] Host access pin:', appHostPin);
+}
+
+// get index for registered client
+function clientIndex(socket, callback) {
+  var index = appClients.findIndex((client) => {
+    return client.name === socket.name;
+  });
+
+  callback(index, socket);
 }
 
 // update client list and emit client connection events
-function clientConnect(socket) {
-  tvClientIndex(socket, (i) => {
+function clientRegister(socket) {
+  clientIndex(socket, (i) => {
     if (i > -1) {
-      tvClients[i].connected = true;
+      appClients[i].connected = socket.connected;
     } else {
-      tvClients.push(
-        {
-          connected: true,
-          name: socket.name,
-          voted: false,
-        }
-      ).sort((a, b) => {
+      appClients.push({
+        connected: socket.connected,
+        name: socket.name,
+        voted: false,
+      });
+      
+      appClients.sort((a, b) => {
         return (a.name > b.name) ? 1 : -1;
       });
     }
-  });
 
-  socket.emit('clientConnect', socket.name);
+    console.log('[IO] Client connected:', socket.name);
+    socket.emit('appRegistered', appClients[i]);
+  });
 }
 
 // create database tables
@@ -134,25 +147,25 @@ function dbCreateTables() {
   // gnbb table
   gnbp  = `CREATE TABLE IF NOT EXISTS gnbb (`;
   gnbp += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
-  gnbp += `voter_name TEXT NOT NULL,`;
+  gnbp += `client_name TEXT NOT NULL,`;
   gnbp += `contestant_code TEXT NOT NULL);`;
 
   db.run(gnbp, (err) => {
     if (err) {
       console.log('[DB] Error when creating table:', err);
     } else {
-      console.log('[DB] Created table "GNBP"');
+      console.log('[DB] Table created: gnbp');
     }
   });
 
   // votes table
-  columns = tvCategories.map((category) => {
+  columns = appCategories.map((category) => {
     return `cat_${category.key} INTEGER NOT NULL`;
   }).join(`,`);
 
   votes  = `CREATE TABLE IF NOT EXISTS votes (`;
   votes += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
-  votes += `voter_name TEXT NOT NULL,`;
+  votes += `client_name TEXT NOT NULL,`;
   votes += `contestant_code TEXT NOT NULL,`;
   votes += `${columns},`
   votes += `total INTEGER NOT NULL);`;
@@ -161,19 +174,21 @@ function dbCreateTables() {
     if (err) {
       console.log('[DB] Error when creating table:', err);
     } else {
-      console.log('[DB] Created table "VOTES"');
+      console.log('[DB] Table created: votes');
     }
   });
 }
 
 // insert Graham Norton bitch point record for voter and contestant
 function dbInsertGNBP(socket) {
-  var query = `INSERT INTO gnbp (voter_name,contestant_code) VALUES (?,?)`;
-  var values = [socket.name, tvBallot.code];
+  var query = `INSERT INTO gnbp (client_name,contestant_code) VALUES (?,?)`;
+  var values = [socket.name, appBallot.code];
 
   db.run(query, values, (err) => {
     if (err) {
       console.log('[DB] Error inserting record:', err);
+    } else {
+      console.log('[DB] Counted GNBP');
     }
   });
 }
@@ -181,18 +196,18 @@ function dbInsertGNBP(socket) {
 // add vote record for client and current contestant
 function dbInsertVote(socket, scores) {
   var cat_columns, cat_placeholders, query, total;
-  var values = [socket.name, tvBallot.code].concat(scores);
+  var values = [socket.name, appBallot.contestant.code].concat(scores);
 
-  cat_columns = tvCategories.map((category) => {
+  cat_columns = appCategories.map((category) => {
     return `cat_${category.key}`;
   }).join(`,`);
 
-  cat_placeholders = tvCategories.map(() => {
+  cat_placeholders = appCategories.map(() => {
     return `?`;
   }).join(`,`);
 
   query  = `INSERT INTO votes (`;
-  query += `voter_name,`;
+  query += `client_name,`;
   query += `contestant_code,`;
   query += `${cat_columns},`;
   query += `score) VALUES (?,?,${cat_placeholders},?);`;
@@ -207,30 +222,53 @@ function dbInsertVote(socket, scores) {
     if (err) {
       console.log('[DB] Error inserting record:', err);
     } else {
-      tvClientIndex(socket, (i) => {
+      clientIndex(socket, (i) => {
         if (i > -1) {
-          tvClients[i].voted = true;
+          appClients[i].voted = true;
         }
       });
 
+      console.log('[DB] Counted ballot');
       socket.emit('appCountBallot', values);
     }
   });
 }
 
 // get category score for all contestants 
-function dbQueryCategory(category_key, callback) {
+function dbQueryCategory(category, callback) {
   var query;
   
   query  = `SELECT contestant_code,`;
-  query += `COUNT(voter_name) votes,`;
-  query += `SUM(cat_${category_key}) score FROM votes GROUP BY contestant_code ORDER BY score DESC;`;
+  query += `COUNT(client_name) votes,`;
+  query += `SUM(cat_${category.key}) score FROM votes GROUP BY contestant_code ORDER BY score DESC;`;
 
   db.all(sql, (err, rows) => {
     if (err) {
       console.log('[DB] Error performing query:', err);
     } else {
-      callback(rows);
+      callback(rows, category);
+    }
+  });
+}
+
+// get ballot data for client
+function dbQueryClient(socket, contestant = {}, callback) {
+  var params, query;
+  
+  query = `SELECT * FROM votes WHERE client_name=?`;
+
+  if (contestant.code) {
+    params = [socket.name, contestant.code];
+    query += ` AND contestant_code=?`;
+  } else {
+    params = socket.name;
+  }
+
+  db.all(query, params, (err, rows) => {
+    if (err) {
+      console.log('[DB] Error performing query:', err);
+    } else {
+      callback(rows, socket, contestant);
     }
   });
 }
@@ -240,7 +278,7 @@ function dbQueryGNBP(callback) {
   var query;
   
   query  = `SELECT contestant_code,`;
-  query += `COUNT(voter_name) score FROM gnbp GROUP BY contestant_code ORDER BY score DESC;`;
+  query += `COUNT(client_name) score FROM gnbp GROUP BY contestant_code ORDER BY score DESC;`;
 
   db.all(query, (err, rows) => {
     if (err) {
@@ -256,7 +294,7 @@ function dbQueryTotal(callback) {
   var query;
   
   query  = `SELECT contestant_code,`;
-  query += `COUNT(voter_name) votes,`;
+  query += `COUNT(client_name) votes,`;
   query += `SUM(total) total FROM votes GROUP BY contestant_code ORDER BY total DESC;`;
 
   db.all(query, (err, rows) => {
@@ -268,16 +306,16 @@ function dbQueryTotal(callback) {
   });
 }
 
+// ...
+function hostClientsTable() {
+  if (appClients.length > 0) {
+    ioHost.emit('appClientsTable', appClients);
+  }
+}
+
 // generate host pin code
 function hostPin() {
   return Math.floor(1000 + Math.random() * 9000);
-}
-
-// get app index for client
-function tvClientIndex(socket, callback) {
-  callback(tvClients.findIndex((a) => {
-    return a.name === socket.name;
-  }));
 }
 
 
@@ -455,7 +493,7 @@ function dbTableCreate() {
 
   db.run(gnbp, function(err) {});
 
-  columns = tvCategories.map(function(category) {
+  columns = appCategories.map(function(category) {
     return `category_` + category.title + ` INTEGER NOT NULL`;
   }).join(`,`);
 
@@ -481,11 +519,11 @@ function dbVoteInsert(socket, scores) {
   var columns, placeholders, sql, total;
   var values = [socket.name, appBallot.code].concat(scores);
 
-  columns = tvCategories.map(function(category) {
+  columns = appCategories.map(function(category) {
     return `category_` + category.title;
   }).join(`,`);
 
-  placeholders = tvCategories.map(function() {
+  placeholders = appCategories.map(function() {
     return `?`;
   }).join(`,`);
 
@@ -554,7 +592,7 @@ function hostBallotClose() {
 
 // emit ballot open events to all clients and host
 function hostBallotOpen(i) {
-  appBallot = tvContestants[i];
+  appBallot = appContestants[i];
 
   for (let [i, voter] of appVoters.entries()) {
     /* dbVoterSingle(voter, appBallot.code, function(voter, vote) {
@@ -592,10 +630,10 @@ function hostVoters() {
 
 // get defined category score for all contestants and emit events
 function pcaCategories() {
-  for (let [i, category] of tvCategories.entries()) {
+  for (let [i, category] of appCategories.entries()) {
     dbContestantCategory(category.title, function(scores) {
       for (let [i, score] of scores.entries()) {
-        scores[i].contestant = tvContestants.find(function(a) {
+        scores[i].contestant = appContestants.find(function(a) {
           return a.code === score.contestant;
         });
       }
@@ -609,7 +647,7 @@ function pcaCategories() {
 function pcaGNBP() {
   dbContestantGNBP(function(scores) {
     for (let [i, score] of scores.entries()) {
-      scores[i].contestant = tvContestants.find(function(a) {
+      scores[i].contestant = appContestants.find(function(a) {
         return a.code === score.contestant;
       });
     }
@@ -622,7 +660,7 @@ function pcaGNBP() {
 function pcaTotal() {
   dbContestantTotal(function(scores) {
     for (let [i, score] of scores.entries()) {
-      scores[i].contestant = tvContestants.find(function(a) {
+      scores[i].contestant = appContestants.find(function(a) {
         return a.code === score.contestant;
       });
     }
@@ -633,7 +671,7 @@ function pcaTotal() {
 
 */
 
-__init();
+__initialize();
 
 module.exports = {
   app: app,
