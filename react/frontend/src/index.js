@@ -1,13 +1,21 @@
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
-import App from './App';
+
+// import App from './App';
+import Client from './routes/Client';
+import Host from './routes/Host';
 import reportWebVitals from './reportWebVitals';
 
+import './index.css';
+
 ReactDOM.render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>,
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Client />} />
+      <Route path="/host" element={<Host />} />
+    </Routes>
+  </BrowserRouter>,
   document.getElementById('root')
 );
 
