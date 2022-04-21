@@ -1,13 +1,13 @@
 import { Card } from 'antd';
 import { useContext } from 'react';
 
-import { ClientSocket } from '../context/ClientSocket';
+import { SocketContext } from '../context/SocketContext';
 import RegistrationForm from './RegistrationForm';
 
 export default function ClientRegistration() {
 
   // variables
-  const socket = useContext(ClientSocket);
+  const socket = useContext(SocketContext);
 
   // functions
   const submitRegistration = (values) => {
@@ -20,8 +20,10 @@ export default function ClientRegistration() {
 
   // component
   return (
-    <Card bordered={false} className="tv-clientRegistration">
-      <RegistrationForm onFinish={submitRegistration} />
-    </Card>
+    <div className="tv-clientRegistration">
+      <Card bordered={false}>
+        <RegistrationForm onFinish={submitRegistration} />
+      </Card>
+    </div>
   );
 }

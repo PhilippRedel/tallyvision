@@ -1,15 +1,16 @@
-import { Card } from 'antd';
+import { Card, Col, Row } from 'antd';
 import { useContext } from 'react';
 
-import { ClientSocket } from '../context/ClientSocket';
+import { SocketContext } from '../context/SocketContext';
 import ContestantDetails from './ContestantDetails';
 import GNBB from './GNBB';
 import RatingForm from './RatingForm';
+import RatingSummary from './RatingSummary';
 
 export default function ClientBallot({ categories, contestant }) {
 
   // variables
-  const socket = useContext(ClientSocket);
+  const socket = useContext(SocketContext);
 
   // functions
   const pushGNBB = () => {
@@ -28,6 +29,17 @@ export default function ClientBallot({ categories, contestant }) {
       <Card bordered={false}>
         <ContestantDetails contestant={contestant} />
         <RatingForm categories={categories} onFinish={submitBallot} />
+        20
+        <Row className="" gutter={[16, 16]}>
+          {categories.map((category) => (
+            <Col key={category.key} xs={12}>
+              <RatingSummary
+                category={category}
+                value={Math.floor(Math.random() * category.max)}
+              />
+            </Col>
+          ))}
+        </Row>
       </Card>
       <GNBB onFinish={pushGNBB} />
     </div>
