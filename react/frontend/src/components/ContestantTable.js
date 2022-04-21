@@ -1,10 +1,43 @@
 import { Col, Row, Table } from 'antd';
 
+import ContestantDetails from './ContestantDetails';
 import RatingSummary from './RatingSummary';
 
-export default function ContestantTable({ categories, columns, contestants }) {
+export default function ContestantTable({ categories, contestants, host }) {
 
-  columns.push(Table.EXPAND_COLUMN);
+  // variables
+  const columns = [
+    {
+      align: 'left',
+      dataIndex: ['artist', 'country', 'title'],
+      key: 'col_contestant',
+      render: (value, record) => (
+        <ContestantDetails contestant={record} />
+      ),
+      showSorterTooltip: false,
+      sorter: (a, b) => a.country.localeCompare(b.country),
+      title: 'Contestant',
+    },
+    ...(host ? [{
+      align: 'center',
+      className: 'tv-column--nowrap',
+      dataIndex: 'votes',
+      key: 'col_votes',
+      showSorterTooltip: false,
+      sorter: (a, b) => a.total - b.total,
+      title: 'Votes',
+    }] : []),
+    {
+      align: 'center',
+      className: 'tv-column--nowrap',
+      dataIndex: 'total',
+      key: 'col_total',
+      showSorterTooltip: false,
+      sorter: (a, b) => a.total - b.total,
+      title: 'Total',
+    },
+    Table.EXPAND_COLUMN,
+  ];
 
   // component
   return (
