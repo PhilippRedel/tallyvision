@@ -11,12 +11,6 @@ body {
   margin-left: 8px;
 }
 
-.tv-clientBallot,
-.tv-clientRegistration {
-  margin: auto;
-  max-width: 384px;
-}
-
 .tv-column--nowrap {
   white-space: nowrap;
   width: 1%;
@@ -96,28 +90,6 @@ body {
   }
 }
 
-.tv-hostSider {
-  &__collapse {
-    > .@{ant-prefix}-collapse-item {
-      > .@{ant-prefix}-collapse-content {
-        background: @menu-dark-inline-submenu-bg;
-        color: @menu-dark-highlight-color;
-      }
-
-      > .@{ant-prefix}-collapse-header {
-        color: @menu-dark-color;
-      }
-
-      &-active,
-      &:hover {
-        > .@{ant-prefix}-collapse-header {
-          color: @menu-dark-highlight-color;
-        }
-      }
-    }
-  }
-}
-
 .tv-siderClientsTable {
   .@{ant-prefix}-badge-status {
     &-dot {
@@ -148,12 +120,22 @@ body {
     }
   }
 
+  .@{ant-prefix}-table-empty .@{ant-prefix}-table-tbody {
+    > tr.@{ant-prefix}-table-placeholder {
+      color: @menu-dark-color;
+
+      > td:hover {
+        background: transparent;
+      }
+    }
+  }
+
   .tv-column__voted {
     color: @primary-color;
   }
 }
 
-.tv-siderTitle {
+.tv-siderHeading {
   display: flex;
   flex-basis: 100%;
 
@@ -171,12 +153,54 @@ body {
   padding: 1rem;
   position: relative;
 
-  &--mobile {
-    @media ( min-width: 640px ) {
+  @media ( min-width: 390px ) {
+    &--mobile {
       border-radius: 1.867rem;
       margin-left: auto;
       margin-right: auto;
-      max-width: 640px;
+      max-width: 390px;
+    }
+  }
+}
+
+.tv-host {
+  border-radius: 0.334rem;
+  height: calc(100vh - 2rem);
+  overflow: hidden;
+
+  &__content {
+    overflow: scroll;
+    padding: 0 16px;
+  }
+
+  &__footer {
+    padding: 16px;
+    text-align: center;
+  }
+
+  &__header {
+    padding: 0;
+  }
+
+  &__sider {
+    padding-top: 64px;
+
+    .@{ant-prefix}-collapse > .@{ant-prefix}-collapse-item {
+      > .@{ant-prefix}-collapse-content {
+        background: @menu-dark-inline-submenu-bg;
+        color: @menu-dark-highlight-color;
+      }
+
+      > .@{ant-prefix}-collapse-header {
+        color: @menu-dark-color;
+      }
+
+      &-active,
+      &:hover {
+        > .@{ant-prefix}-collapse-header {
+          color: @menu-dark-highlight-color;
+        }
+      }
     }
   }
 }
