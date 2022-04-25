@@ -9,15 +9,13 @@ import SiderHeader from './SiderHeader';
 const { Content, Footer, Header, Sider } = Layout;
 const { Panel } = Collapse;
 
-export default function HostDashboard({ categories, clients, contestants }) {
+export default function HostDashboard({ categories, clients, scoreData }) {
 
   // component
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider width={240}>
-        <div style={{ color: '#fff', height: '64px' }}></div>
+    <Layout className="tv-hostDashboard">
+      <Sider className="tv-hostDashboard__sider" width={240}>
         <Collapse
-          className="tv-hostSider__collapse"
           defaultActiveKey={['key_clients', 'key_voting']}
           expandIconPosition="right"
           ghost
@@ -31,31 +29,25 @@ export default function HostDashboard({ categories, clients, contestants }) {
           </Panel>
           <Panel
             className="tv-hostSider__voting"
-            header={<SiderHeader count="Open" icon={<StarOutlined />} title="Voting" />}
+            header={<SiderHeader count="Closed" icon={<StarOutlined />} title="Voting" />}
             key="key_voting"
           >
-            <ContestantDetails
-              contestant={{
-                country: 'Country',
-                code: 'gb',
-                artist: 'Artist',
-                title: 'Title',
-                representative: '',
-              }}
-            />
+            <ContestantDetails contestant={{}} />
           </Panel>
         </Collapse>
       </Sider>
-      <Layout className="site-layout">
-        <Header className="site-layout-background" style={{ padding: 0 }} />
-        <Content style={{ margin: '0 16px' }}>
+      <Layout>
+        <Header className="tv-hostDashboard__header" />
+        <Content className="tv-hostDashboard__content">
           <Breadcrumb style={{ margin: '16px 0' }}>
-            <Breadcrumb.Item>User</Breadcrumb.Item>
-            <Breadcrumb.Item>Bill</Breadcrumb.Item>
+            <Breadcrumb.Item>DB</Breadcrumb.Item>
+            <Breadcrumb.Item>2022-04-20.db</Breadcrumb.Item>
           </Breadcrumb>
-          <ContestantTable categories={categories} contestants={contestants} host />
+          <ContestantTable categories={categories} dataSource={scoreData} host />
         </Content>
-        <Footer style={{ textAlign: 'center' }}>Ant Design ©2018 Created by Ant UED</Footer>
+        <Footer className="tv-hostDashboard__footer">
+          Version 22.04.22
+        </Footer>
       </Layout>
     </Layout>
   );

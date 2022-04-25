@@ -1,7 +1,7 @@
 import { Badge, Table } from 'antd';
 import { CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
 
-export default function SiderClientsTable({ clients }) {
+export default function SiderClientsTable({ dataSource }) {
 
   // variables
   const columns = [
@@ -34,11 +34,12 @@ export default function SiderClientsTable({ clients }) {
       bordered={false}
       className="tv-siderClientsTable"
       columns={columns}
-      dataSource={clients}
+      dataSource={dataSource}
       rowKey={(record) => `name_${record.name}`}
       pagination={false}
       showHeader={false}
       size="small"
+      locale={{ emptyText: 'No clients connected' }}
     />
   );
 }

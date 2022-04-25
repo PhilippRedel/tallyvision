@@ -3,14 +3,14 @@ import { Col, Row, Table } from 'antd';
 import ContestantDetails from './ContestantDetails';
 import RatingSummary from './RatingSummary';
 
-export default function ContestantTable({ categories, contestants, host }) {
+export default function ContestantTable({ categories, dataSource, host }) {
 
   // variables
   const columns = [
     {
       align: 'left',
-      dataIndex: ['artist', 'country', 'title'],
-      key: 'col_contestant',
+      dataIndex: 'country',
+      key: 'country',
       render: (value, record) => (
         <ContestantDetails contestant={record} />
       ),
@@ -22,18 +22,16 @@ export default function ContestantTable({ categories, contestants, host }) {
       align: 'center',
       className: 'tv-column--nowrap',
       dataIndex: 'votes',
-      key: 'col_votes',
       showSorterTooltip: false,
-      sorter: (a, b) => a.total - b.total,
+      sorter: (a, b) => (a.votes ? a.votes : 0) - (b.votes ? b.votes : 0),
       title: 'Votes',
     }] : []),
     {
       align: 'center',
       className: 'tv-column--nowrap',
       dataIndex: 'total',
-      key: 'col_total',
       showSorterTooltip: false,
-      sorter: (a, b) => a.total - b.total,
+      sorter: (a, b) => (a.total ? a.total : 0) - (b.total ? b.total : 0),
       title: 'Total',
     },
     Table.EXPAND_COLUMN,
@@ -45,8 +43,8 @@ export default function ContestantTable({ categories, contestants, host }) {
       bordered={false}
       className="tv-contestantTable"
       columns={columns}
-      dataSource={contestants}
-      expandable={{
+      dataSource={dataSource}
+      /* expandable={{
         expandedRowRender: () => (
           <Row className="" gutter={[16, 16]}>
             {categories.map((category) => (
@@ -59,8 +57,8 @@ export default function ContestantTable({ categories, contestants, host }) {
             ))}
           </Row>
         ),
-        // rowExpandable: (record) => record.total,
-      }}
+        rowExpandable: (record) => record.total,
+      }} */
       pagination={false}
     />
   );
