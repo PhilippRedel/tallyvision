@@ -16,8 +16,11 @@ export default function Client() {
   const [contestants, setContestants] = useState([]);
 
   useEffect(() => {
-    socket.on('appRegistered', (client) => {
-      console.log('[App] Registered client:', client);
+    socket.on('appConnected', (data) => {
+      setCategories(data.categories);
+      setContestants(data.contestants);
+      
+      console.log('[App] Connected as client:', data.client);
     });
 
     return () => socket.disconnect();
@@ -29,9 +32,7 @@ export default function Client() {
         <ClientRegistration />
       </Preview>
 
-      {/*
-      <Divider orientation="left">Client ballot</Divider>
-      <div className="tv-preview tv-preview--client">
+      <Preview>
         <ClientBallot
           categories={categories}
           contestant={{
@@ -42,16 +43,14 @@ export default function Client() {
             representative: '',
           }}
         />
-      </div>
+      </Preview>
       
-      <Divider orientation="left">Client scorecard</Divider>
-      <div className="tv-preview tv-preview--client">
+      <Preview>
         <ClientScorecard
           categories={categories}
           contestants={contestants}
         />
-      </div>
-      */}
+      </Preview>
     </SocketContext.Provider>
   );
 }
