@@ -3,6 +3,7 @@ const createError = require('http-errors');
 const express = require('express');
 const logger = require('morgan');
 const path = require('path');
+const sqlite3 = require('sqlite3');
 
 // routers
 const router = require('./routes/api');
@@ -15,15 +16,20 @@ const server = require('http').createServer(app);
 const io = require('socket.io')(server, {
   cors: {
     origin: 'http://localhost:3000',
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST'],
   }
 });
 const ioClient = io.of('/client');
 const ioHost = io.of('/host');
 
 // database
-const sqlite3 = require('sqlite3');
-const db = new sqlite3.Database('./db/' + new Date().toISOString().substring(0, 10) + '.db');
+const db = new sqlite3.Database(dbFilename(), (err) => {
+  if (err) {
+    console.log('[DB] Error creating database:', err);
+  } else {
+    dbCreateTables();
+  }
+});
 
 app.use('/', router);
 app.use(cookieParser());
@@ -41,25 +47,26 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   res.locals.status = err.status || 500;
 
-  res.send(
-    {
-      status: res.locals.status,
-      message: err.message,
-    }
-  ).status(res.locals.status);
+  res.send({
+    status: res.locals.status,
+    message: err.message,
+  }).status(res.locals.status);
 });
 
 // app data
 const appCategories = require('./data/categories');
 const appContestants = require('./data/contestants/2022');
+const appVersion = process.env.npm_package_version;
 
 // app variables
 var appBallot = {
+  contestant: {
+    code: 'se',
+  },
   open: false,
-  contestant: {},
 };
 var appClients = [];
-var appHostPin = hostPin();
+var appHostPin = appHostPin();
 
 
 
@@ -76,20 +83,21 @@ ioClient.use((socket, next) => {
 });
 
 ioClient.on('connection', (socket) => {
-  clientRegister(socket);
-  hostClientsTable();
+  ioClientConnected(socket);
+  ioHostClients();
 
   socket.on('clientPushGNBB', () => {
-    console.log('[IO] Client pressed GNBB:', socket.id);
+    dbInsertGNBP(socket);
+    console.log('[IO] Client clicked GNBB:', socket.name);
   });
 
   socket.on('clientSubmitBallot', (scores) => {
-    console.log('[IO] Client submitted ballot:', [socket.id, scores]);
     dbInsertVote(socket, scores);
+    console.log('[IO] Client submitted ballot:', [socket.name, scores]);
   });
 
   socket.on('disconnect', (reason) => {
-    clientIndex(socket, (i) => {
+    appClientIndex(socket, (i) => {
       if (i > -1) {
         appClients[i].connected = socket.connected;
       }
@@ -100,17 +108,19 @@ ioClient.on('connection', (socket) => {
 });
 
 ioHost.on('connection', (socket) => {
-  hostClientsTable();
+  ioHostConnected();
+  ioHostClients();
+  ioHostScoreData();
 });
 
 // initialize app
 function __initialize() {
-  dbCreateTables();
+  console.log('[TV] Version:', appVersion);
   console.log('[TV] Host access pin:', appHostPin);
 }
 
 // get index for registered client
-function clientIndex(socket, callback) {
+function appClientIndex(socket, callback) {
   var index = appClients.findIndex((client) => {
     return client.name === socket.name;
   });
@@ -118,26 +128,9 @@ function clientIndex(socket, callback) {
   callback(index, socket);
 }
 
-// update client list and emit client connection events
-function clientRegister(socket) {
-  clientIndex(socket, (i) => {
-    if (i > -1) {
-      appClients[i].connected = socket.connected;
-    } else {
-      appClients.push({
-        connected: socket.connected,
-        name: socket.name,
-        voted: false,
-      });
-      
-      appClients.sort((a, b) => {
-        return (a.name > b.name) ? 1 : -1;
-      });
-    }
-
-    console.log('[IO] Client connected:', socket.name);
-    socket.emit('appRegistered', appClients[i]);
-  });
+// generate pin code for host
+function appHostPin() {
+  return Math.floor(1000 + Math.random() * 9000);
 }
 
 // create database tables
@@ -152,7 +145,7 @@ function dbCreateTables() {
 
   db.run(gnbp, (err) => {
     if (err) {
-      console.log('[DB] Error when creating table:', err);
+      console.log('[DB] Error creating table:', err);
     } else {
       console.log('[DB] Table created: gnbp');
     }
@@ -172,11 +165,16 @@ function dbCreateTables() {
 
   db.run(votes, (err) => {
     if (err) {
-      console.log('[DB] Error when creating table:', err);
+      console.log('[DB] Error creating table:', err);
     } else {
       console.log('[DB] Table created: votes');
     }
   });
+}
+
+// generate database filename
+function dbFilename() {
+  return `${new Date().toISOString().substring(0, 10)}.db`;
 }
 
 // insert Graham Norton bitch point record for voter and contestant
@@ -195,8 +193,7 @@ function dbInsertGNBP(socket) {
 
 // add vote record for client and current contestant
 function dbInsertVote(socket, scores) {
-  var cat_columns, cat_placeholders, query, total;
-  var values = [socket.name, appBallot.contestant.code].concat(scores);
+  var cat_columns, cat_placeholders, query, total = 0, values;
 
   cat_columns = appCategories.map((category) => {
     return `cat_${category.key}`;
@@ -210,11 +207,14 @@ function dbInsertVote(socket, scores) {
   query += `client_name,`;
   query += `contestant_code,`;
   query += `${cat_columns},`;
-  query += `score) VALUES (?,?,${cat_placeholders},?);`;
+  query += `total) VALUES (?,?,${cat_placeholders},?);`;
 
-  total = scores.reduce((a, b) => {
-    return a + b;
-  }, 0);
+  values = [socket.name, appBallot.contestant.code];
+  values = values.concat(Object.values(scores));
+
+  for (var cat_key in scores) {
+    total += scores[cat_key];
+  }
 
   values.push(total);
 
@@ -222,19 +222,51 @@ function dbInsertVote(socket, scores) {
     if (err) {
       console.log('[DB] Error inserting record:', err);
     } else {
-      clientIndex(socket, (i) => {
+      appClientIndex(socket, (i) => {
         if (i > -1) {
           appClients[i].voted = true;
         }
       });
 
-      console.log('[DB] Counted ballot');
       socket.emit('appCountBallot', values);
+      console.log('[DB] Counted ballot');
     }
   });
 }
 
-// get category score for all contestants 
+function dbPromiseAll(query) {
+  var p = new Promise((resolve, reject) => {
+    db.all(query, (err, rows) => {
+      if (err) {
+        console.log('[DB] Error performing query:', err);
+
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+
+  return p;
+}
+
+function dbPromiseRun(query) {
+  var p = new Promise((resolve, reject) => {
+    db.run(query, (err, rows) => {
+      if (err) {
+        console.log('[DB] Error performing query:', err);
+
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
+
+  return p;
+}
+
+// get category score data for all contestants 
 function dbQueryCategory(category, callback) {
   var query;
   
@@ -251,7 +283,7 @@ function dbQueryCategory(category, callback) {
   });
 }
 
-// get ballot data for client
+// get score data for client
 function dbQueryClient(socket, contestant = {}, callback) {
   var params, query;
   
@@ -289,36 +321,113 @@ function dbQueryGNBP(callback) {
   });
 }
 
-// get total score for all contestants
-function dbQueryTotal(callback) {
-  var query;
-  
-  query  = `SELECT contestant_code,`;
-  query += `COUNT(client_name) votes,`;
-  query += `SUM(total) total FROM votes GROUP BY contestant_code ORDER BY total DESC;`;
+// get total score data for all contestants
+function dbQueryTotal() {
+  var cat_columns, query;
 
-  db.all(query, (err, rows) => {
-    if (err) {
-      console.log('[DB] Error performing query:', err);
-    } else {
-      callback(rows);
-    }
-  });
+  cat_columns = appCategories.map((category) => {
+    return `SUM(cat_${category.key}) cat_${category.key}`;
+  }).join(`,`);
+  
+  query  = `SELECT contestant_code code,`;
+  query += `COUNT(client_name) votes,`;
+  query += `${cat_columns},`;
+  query += `SUM(total) total FROM votes GROUP BY contestant_code ORDER BY contestant_code ASC;`;
+
+  return dbPromiseAll(query);
 }
 
-// ...
-function hostClientsTable() {
+// update list of clients and emit connection event
+function ioClientConnected(socket) {
+  appClientIndex(socket, (i) => {
+    if (i > -1) {
+      appClients[i].connected = socket.connected;
+    } else {
+      appClients.push({
+        connected: socket.connected,
+        name: socket.name,
+        voted: false,
+      });
+      
+      appClients.sort((a, b) => {
+        return (a.name > b.name) ? 1 : -1;
+      });
+    }
+  });
+
+  appClientIndex(socket, (i) => {
+    socket.emit('appConnected', {
+      categories: appCategories,
+      client: appClients[i],
+      contestants: appContestants,
+    });
+    
+    console.log('[IO] Client connected:', appClients[i]);
+  });
+
+  /* asyncClientIndex(socket).then((i) => {
+    if (i > -1) {
+      appClients[i].connected = socket.connected;
+    } else {
+      appClients.push({
+        connected: socket.connected,
+        name: socket.name,
+        voted: false,
+      });
+      
+      appClients.sort((a, b) => {
+        return (a.name > b.name) ? 1 : -1;
+      });
+    }
+
+    return asyncClientIndex(socket);
+  }).then((i) => {
+    socket.emit('appConnected', {
+      categories: appCategories,
+      client: appClients[i],
+      contestants: appContestants,
+    });
+    
+    console.log('[IO] Client connected:', appClients[i]);
+  }); */
+}
+
+// send clients data to host
+function ioHostClients() {
   if (appClients.length > 0) {
-    ioHost.emit('appClientsTable', appClients);
+    ioHost.emit('appClients', appClients);
   }
 }
 
-// generate host pin code
-function hostPin() {
-  return Math.floor(1000 + Math.random() * 9000);
+// ...
+function ioHostConnected() {
+  ioHost.emit('appConnected', {
+    categories: appCategories,
+    database: dbFilename(),
+    version: appVersion,
+  });
+
+  console.log('[IO] Host connected');
 }
 
+// ...
+function ioHostScoreData() {
+  var scoreData = appContestants;
 
+  dbQueryTotal().then((rows) => {
+    for (var contestant of scoreData) {
+      var i = rows.findIndex((row) => {
+        return row.code === contestant.code;
+      });
+  
+      if (i > -1) {
+        contestant = Object.assign(contestant, rows[i]);
+      }
+    }
+  }).then(() => {
+    ioHost.emit('appScoreData', scoreData);
+  });
+}
 
 
 
