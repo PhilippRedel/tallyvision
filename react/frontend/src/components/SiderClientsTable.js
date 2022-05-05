@@ -12,7 +12,7 @@ export default function SiderClientsTable({ dataSource }) {
     {
       align: 'left',
       className: 'tv-col__name',
-      key: 'col_client',
+      key: 'col_name',
       render: (value, record) => (
         <Badge
           status={(record.connected ? 'success' : 'error')}
