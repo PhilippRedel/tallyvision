@@ -487,9 +487,7 @@ function ioHostBallot() {
 
 // send list of clients to host
 function ioHostClients() {
-  if (appClients.length > 0) {
-    ioHost.emit('appClients', appClients);
-  }
+  ioHost.emit('appClients', appClients);
 }
 
 // send host app details and emit connection events
