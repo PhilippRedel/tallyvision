@@ -48,9 +48,9 @@ export default function Host() {
   }, []);
 
   return (
-    <SocketContext.Provider value={ioHost.connect()}>
-      <BallotContext.Provider value={ballot}>
-        <Container viewport="desktop">
+    <Container viewport="desktop">
+      <SocketContext.Provider value={ioHost.connect()}>
+        <BallotContext.Provider value={ballot}>
           <Layout className="tv-hostLayout__outer">
             <Sider className="tv-hostLayout__sider" width={240}>
               <Collapse
@@ -59,13 +59,25 @@ export default function Host() {
                 ghost
               >
                 <Panel
-                  header={<SiderHeading count={clients.length} icon={<UserOutlined />} title="Clients" />}
+                  header={
+                    <SiderHeading
+                      count={clients.length}
+                      icon={<UserOutlined />}
+                      title="Clients"
+                    />
+                  }
                   key="key_clients"
                 >
                   <SiderClientsTable dataSource={clients} />
                 </Panel>
                 <Panel
-                  header={<SiderHeading count={ballot.open ? 'Open' : 'Closed'} icon={<StarOutlined />} title="Ballot" />}
+                  header={
+                    <SiderHeading
+                      count={ballot.open ? 'Open' : 'Closed'}
+                      icon={<StarOutlined />}
+                      title="Ballot"
+                    />
+                  }
                   key="key_voting"
                 >
                   <ContestantDetails contestant={ballot.contestant} />
@@ -73,21 +85,24 @@ export default function Host() {
               </Collapse>
             </Sider>
             <Layout className="tv-hostLayout__inner">
-              <Header className="tv-hostLayout__header" />
               <Content className="tv-hostLayout__content">
-                <Breadcrumb style={{ margin: '16px 0' }}>
+                <Breadcrumb>
                   <Breadcrumb.Item>DB</Breadcrumb.Item>
                   <Breadcrumb.Item>{app.db}</Breadcrumb.Item>
                 </Breadcrumb>
-                <ScoreTable categories={app.categories} dataSource={scores} host />
+                <ScoreTable
+                  categories={app.categories}
+                  dataSource={scores}
+                  host
+                />
                 <Footer className="tv-hostLayout__footer">
                   Version <span className="ver">{app.version}</span>
                 </Footer>
               </Content>
             </Layout>
           </Layout>
-        </Container>
-      </BallotContext.Provider>
-    </SocketContext.Provider>
+        </BallotContext.Provider>
+      </SocketContext.Provider>
+    </Container>
   );
 }

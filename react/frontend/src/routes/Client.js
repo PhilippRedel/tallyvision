@@ -65,12 +65,12 @@ export default function Client() {
   }, []);
 
   return (
-    <SocketContext.Provider value={ioClient}>
-      <BallotContext.Provider value={{
-        ballot: ballot,
-        ballotScore: ballotScore
-      }}>
-        <Container viewport="mobile">
+    <Container viewport="mobile">
+      <SocketContext.Provider value={ioClient}>
+        <BallotContext.Provider value={{
+          ballot: ballot,
+          ballotScore: ballotScore
+        }}>
           <Tabs
             activeKey={view}
             centered
@@ -84,23 +84,27 @@ export default function Client() {
             >
               <ClientRegistration />
             </TabPane>
-            <TabPane
-              disabled={!ioClient.connected}
-              key="view_scoretable"
-              tab={<ProfileOutlined />}
-            >
-              <ScoreTable categories={app.categories} dataSource={scores} />
-            </TabPane>
-            <TabPane
-              disabled={!ioClient.connected || !ballot.open}
-              key="view_ballot"
-              tab={<StarOutlined />}
-            >
-              <ClientBallot categories={app.categories} />
-            </TabPane>
+            {ioClient.connected &&
+              <>
+                <TabPane
+                  disabled={!ioClient.connected}
+                  key="view_scoretable"
+                  tab={<ProfileOutlined />}
+                >
+                  <ScoreTable categories={app.categories} dataSource={scores} />
+                </TabPane>
+                <TabPane
+                  disabled={!ioClient.connected || !ballot.open}
+                  key="view_ballot"
+                  tab={<StarOutlined />}
+                >
+                  <ClientBallot categories={app.categories} />
+                </TabPane>
+              </>
+            }
           </Tabs>
-        </Container>
-      </BallotContext.Provider>
-    </SocketContext.Provider>
+        </BallotContext.Provider>
+      </SocketContext.Provider>
+    </Container>
   );
 }
