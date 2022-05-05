@@ -6,8 +6,6 @@ import Client from './routes/Client';
 import Host from './routes/Host';
 import reportWebVitals from './reportWebVitals';
 
-import './index.css';
-
 ReactDOM.render(
   <BrowserRouter>
     <Routes>
