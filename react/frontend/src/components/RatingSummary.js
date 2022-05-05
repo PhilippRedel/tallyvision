@@ -1,19 +1,29 @@
-import { Rate, Typography } from 'antd';
+import { Col, Rate, Row, Typography } from 'antd';
 
-export default function RatingSummary({ category, value = 0 }) {
-  const { Text } = Typography;
+export default function RatingSummary({ categories, dataSource }) {
+
+  // variables
+  const { Text, Title } = Typography;
 
   return (
     <div className="tv-ratingSummary">
-      <Text className="tv-ratingSummary__title">
-        {category.label}
-      </Text>
-      <Rate
-        className="tv-ratingSummary__rating"
-        count={category.max}
-        disabled
-        value={value}
-      />
+      <Title className="tv-ratingSummary__title" level={1}>
+        {dataSource.total}
+      </Title>
+      <Row gutter={[32, 16]}>
+        {categories.map((category) => (
+          <Col key={category.key} xs={12}>
+            <Text>
+              {category.label}
+            </Text>
+            <Rate
+              count={category.max}
+              disabled
+              value={dataSource[`cat_${category.key}`]}
+            />
+          </Col>
+        ))}
+      </Row>
     </div>
   );
 }

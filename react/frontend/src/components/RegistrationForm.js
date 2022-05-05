@@ -1,16 +1,36 @@
 import { Button, Form, Input, Typography } from 'antd';
+import { useContext } from 'react';
 
-export default function RegistrationForm({ onFinish, onFinishFailed }) {
+import { SocketContext } from '../context/SocketContext';
+
+export default function RegistrationForm() {
+
+  // variables
   const { Title } = Typography;
+  const socket = useContext(SocketContext);
+
+  // functions
+  const submitRegistration = (values) => {
+    socket.auth = {
+      name: values.name.toLowerCase(),
+    };
+
+    socket.connect();
+  };
+
+  // form
+  const [form] = Form.useForm();
+  const nameValue = Form.useWatch('name', form);
 
   // component
   return (
     <Form
+      autoComplete="off"
       className="tv-registrationForm"
+      form={form}
       layout='vertical'
       name="tv_registrationForm"
-      onFinish={onFinish}
-      onFinishFailed={onFinishFailed}
+      onFinish={submitRegistration}
       requiredMark={false}
     >
       <Form.Item
@@ -20,12 +40,20 @@ export default function RegistrationForm({ onFinish, onFinishFailed }) {
           {
             message: 'Enter your name to join or reconnect',
             required: true,
-          }
+          },
         ]}
       >
         <Input maxLength={12} showCount size="large" />
       </Form.Item>
-      <Button block htmlType="submit" size="large" type="primary">Join</Button>
+      <Button
+        block
+        disabled={nameValue ? false : true}
+        htmlType="submit"
+        size="large"
+        type="primary"
+      >
+        Join
+      </Button>
     </Form>
   );
 }

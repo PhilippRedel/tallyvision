@@ -1,12 +1,17 @@
 import { Badge, Table } from 'antd';
 import { CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
+import { useContext } from 'react';
+
+import { BallotContext } from '../context/BallotContext';
 
 export default function SiderClientsTable({ dataSource }) {
 
   // variables
+  const ballot = useContext(BallotContext);
   const columns = [
     {
       align: 'left',
+      className: 'tv-col__name',
       key: 'col_client',
       render: (value, record) => (
         <Badge
@@ -18,12 +23,14 @@ export default function SiderClientsTable({ dataSource }) {
     },
     {
       align: 'center',
-      className: 'tv-column__voted tv-column--nowrap',
+      className: 'tv-col__voted tv-col--nowrap',
       dataIndex: 'voted',
       key: 'col_voted',
-      render: (value) => (
-        value ? <CheckCircleFilled /> : <LoadingOutlined />
-      ),
+      render: (value) => {
+        if (ballot.open) {
+          return value ? <CheckCircleFilled /> : <LoadingOutlined />
+        }
+      },
       title: 'Voted',
     },
   ];
@@ -35,11 +42,11 @@ export default function SiderClientsTable({ dataSource }) {
       className="tv-siderClientsTable"
       columns={columns}
       dataSource={dataSource}
-      rowKey={(record) => `name_${record.name}`}
+      locale={{ emptyText: 'No clients connected' }}
       pagination={false}
+      rowKey={(record) => `name_${record.name}`}
       showHeader={false}
       size="small"
-      locale={{ emptyText: 'No clients connected' }}
     />
   );
 }

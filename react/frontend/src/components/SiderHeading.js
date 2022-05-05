@@ -1,6 +1,8 @@
 import { Badge } from 'antd';
 
 export default function SiderHeading({ count, icon, title }) {
+
+  // component
   return (
     <div className="tv-siderHeading">
       <span className="tv-siderHeading__icon">

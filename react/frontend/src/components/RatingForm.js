@@ -1,14 +1,28 @@
 import { Button, Divider, Form, Rate } from 'antd';
+import { useContext } from 'react';
 
-export default function RatingForm({ categories, onFinish, onFinishFailed }) {
+import { BallotContext } from '../context/BallotContext';
+import { SocketContext } from '../context/SocketContext';
+
+export default function RatingForm({ categories }) {
+
+  // variables
+  const { ballot } = useContext(BallotContext);
+  const socket = useContext(SocketContext);
+
+  // functions
+  const submitBallot = (values) => {
+    socket.emit('clientBallotSubmit', values);
+
+    console.log('[Client] Submitted ballot:', [ballot.contestant.code, values]);
+  };
 
   // component
   return (
     <Form
       className="tv-ratingForm"
       name="tv_ratingForm"
-      onFinish={onFinish}
-      onFinishFailed={onFinishFailed}
+      onFinish={submitBallot}
     >
       {categories.map((category) => (
         <div className="tv-ratingForm__category" key={category.key}>
@@ -23,11 +37,20 @@ export default function RatingForm({ categories, onFinish, onFinishFailed }) {
             <Rate
               className="tv-ratingForm__rating"
               count={category.max}
+              disabled={!ballot.open}
             />
           </Form.Item>
         </div>
       ))}
-      <Button block htmlType="submit" size="large" type="primary">Vote</Button>
+      <Button
+        block
+        disabled={!ballot.open}
+        htmlType="submit"
+        size="large"
+        type="primary"
+      >
+        Vote
+      </Button>
     </Form>
   );
 }

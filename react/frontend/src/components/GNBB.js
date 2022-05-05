@@ -1,15 +1,37 @@
 import { Button, Form } from 'antd';
+import { useContext } from 'react';
 
-export default function GNBB({ onFinish, onFinishFailed }) {
+import { BallotContext } from '../context/BallotContext';
+import { SocketContext } from '../context/SocketContext';
+
+export default function GNBB() {
+
+  // variables
+  const { ballot } = useContext(BallotContext);
+  const socket = useContext(SocketContext);
+
+  // functions
+  const clickGNBB = () => {
+    socket.emit('clientGNBB');
+
+    console.log('[Client] Clicked GNBB:', ballot.contestant.code);
+  };
+
   return (
     <Form
       className="tv-GNBB"
       name="tv_GNBB"
-      onFinish={onFinish}
-      onFinishFailed={onFinishFailed}
+      onFinish={clickGNBB}
     >
-      <Button htmlType="submit" type="link">
-        <img alt="" src={process.env.PUBLIC_URL + '/media/gnbb.png'} />
+      <Button
+        disabled={!ballot.open}
+        htmlType="submit"
+        type="link"
+      >
+        <img
+          alt="Graham Norton Bitch Button"
+          src={process.env.PUBLIC_URL + '/media/gnbb.png'}
+        />
       </Button>
     </Form>
   );
