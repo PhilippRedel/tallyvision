@@ -18,17 +18,35 @@ body {
 }
 
 .tv-clientTabs {
-  .@{ant-prefix}-tabs-nav {
-    &:before {
-      border-color: transparent;
+  .@{ant-prefix}-tabs {
+    color: @primary-10;
+
+    &-ink-bar {
+      background: @white;
     }
-  }
 
-  .@{ant-prefix}-tabs-tab {
-    text-transform: uppercase;
+    &-nav {
+      &:before {
+        border-color: transparent;
+      }
+    }
 
-    .anticon {
-      margin: 0 16px;
+    &-tab {
+      text-transform: uppercase;
+
+      &:hover {
+        color: @primary-7;
+      }
+
+      &-active {
+        .@{ant-prefix}-tabs-tab-btn {
+          color: @white;
+        }
+      }
+
+      .anticon {
+        margin: 0 16px;
+      }
     }
   }
 }
@@ -108,7 +126,7 @@ body {
   }
 
   &--mobile {
-    max-width: 390px;
+    max-width: 414px;
     min-width: 320px;
   }
 }
@@ -117,15 +135,15 @@ body {
   &__content {
     overflow: scroll;
     padding: 0 16px;
+
+    .@{ant-prefix}-breadcrumb {
+      margin: 16px 0;
+    }
   }
   
   &__footer {
     padding: 16px;
     text-align: center;
-  }
-
-  &__header {
-    padding: 0;
   }
   
   &__outer {
@@ -135,8 +153,6 @@ body {
   }
 
   &__sider {
-    padding-top: 64px;
-
     .@{ant-prefix}-collapse > .@{ant-prefix}-collapse-item {
       > .@{ant-prefix}-collapse-content {
         background: @menu-dark-inline-submenu-bg;
@@ -240,6 +256,10 @@ body {
 
   .tv-col--nowrap {
     min-width: 6rem;
+  }
+
+  .tv-ratingSummary__title {
+    display: none;
   }
 }
 
