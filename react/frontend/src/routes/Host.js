@@ -1,86 +1,93 @@
-import { Breadcrumb, Layout, Collapse } from 'antd';
-import { io } from 'socket.io-client';
+import { Breadcrumb, Collapse, Layout } from 'antd';
 import { StarOutlined, UserOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 
-import { SocketContext } from '../context/SocketContext';
-import Preview from '../components/Preview';
+import { BallotContext } from '../context/BallotContext';
+import { ioHost, SocketContext } from '../context/SocketContext';
+import Container from '../components/Container';
+import ContestantDetails from '../components/ContestantDetails';
+import ScoreTable from '../components/ScoreTable';
 import SiderClientsTable from '../components/SiderClientsTable';
 import SiderHeading from '../components/SiderHeading';
 
 import '../App.less';
 
-const { Content, Footer, Header, Sider } = Layout;
-const { Panel } = Collapse;
-const socket = io('http://localhost:3030/host').connect();
+export default function Host() {
 
-export default function Client() {
-  const [appData, setAppData] = useState({
+  // variables
+  const { Content, Footer, Header, Sider } = Layout;
+  const { Panel } = Collapse;
+
+  // states
+  const [app, setApp] = useState({
     categories: [],
-    database: '',
+    db: '',
     version: '',
   });
+  const [ballot, setBallot] = useState({
+    contestant: {},
+    open: false,
+  });
   const [clients, setClients] = useState([]);
-  const [scoreData, setScoreData] = useState([]);
+  const [scores, setScores] = useState([]);
 
   useEffect(() => {
-    socket.on('appClients', (clients) => {
-      setClients(clients);
-    });
+    ioHost.on('appBallot', setBallot);
 
-    socket.on('appConnected', (data) => {
-      setAppData(data);
+    ioHost.on('appClients', setClients);
+
+    ioHost.on('appConnected', (data) => {
+      setApp(data);
 
       console.log('[App] Connected as host:', data);
     });
 
-    socket.on('appScoreData', (scoreData) => {
-      setScoreData(scoreData);      
-    });
+    ioHost.on('appScores', setScores);
 
-    return () => socket.disconnect();
+    return () => ioHost.disconnect();
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>
-      <Preview viewport="desktop">
-        <Layout className="tv-host">
-          <Sider className="tv-host__sider" width={240}>
-            <Collapse
-              defaultActiveKey={['key_clients', 'key_voting']}
-              expandIconPosition="right"
-              ghost
-            >
-              <Panel
-                className="tv-hostSider__clients"
-                header={<SiderHeading count={clients.length} icon={<UserOutlined />} title="Clients" />}
-                key="key_clients"
+    <SocketContext.Provider value={ioHost.connect()}>
+      <BallotContext.Provider value={ballot}>
+        <Container viewport="desktop">
+          <Layout className="tv-hostLayout__outer">
+            <Sider className="tv-hostLayout__sider" width={240}>
+              <Collapse
+                defaultActiveKey={['key_clients', 'key_voting']}
+                expandIconPosition="right"
+                ghost
               >
-                <SiderClientsTable dataSource={clients} />
-              </Panel>
-              <Panel
-                className="tv-hostSider__voting"
-                header={<SiderHeading count="Closed" icon={<StarOutlined />} title="Voting" />}
-                key="key_voting"
-              >
-                ...
-              </Panel>
-            </Collapse>
-          </Sider>
-          <Layout>
-            <Header className="tv-host__header" />
-            <Content className="tv-host__content">
-              <Breadcrumb style={{ margin: '16px 0' }}>
-                <Breadcrumb.Item>DB</Breadcrumb.Item>
-                <Breadcrumb.Item>{appData.database}</Breadcrumb.Item>
-              </Breadcrumb>
-            </Content>
-            <Footer className="tv-host__footer">
-              Version <span className="ver">{appData.version}</span>
-            </Footer>
+                <Panel
+                  header={<SiderHeading count={clients.length} icon={<UserOutlined />} title="Clients" />}
+                  key="key_clients"
+                >
+                  <SiderClientsTable dataSource={clients} />
+                </Panel>
+                <Panel
+                  header={<SiderHeading count={ballot.open ? 'Open' : 'Closed'} icon={<StarOutlined />} title="Ballot" />}
+                  key="key_voting"
+                >
+                  <ContestantDetails contestant={ballot.contestant} />
+                </Panel>
+              </Collapse>
+            </Sider>
+            <Layout className="tv-hostLayout__inner">
+              <Header className="tv-hostLayout__header" />
+              <Content className="tv-hostLayout__content">
+                <Breadcrumb style={{ margin: '16px 0' }}>
+                  <Breadcrumb.Item>DB</Breadcrumb.Item>
+                  <Breadcrumb.Item>{app.db}</Breadcrumb.Item>
+                </Breadcrumb>
+                <ScoreTable categories={app.categories} dataSource={scores} host />
+                <Footer className="tv-hostLayout__footer">
+                  Version <span className="ver">{app.version}</span>
+                </Footer>
+              </Content>
+            </Layout>
           </Layout>
-        </Layout>
-      </Preview>
+        </Container>
+      </BallotContext.Provider>
     </SocketContext.Provider>
   );
 }

@@ -1,56 +1,106 @@
-import { io } from 'socket.io-client';
-import React, { useState, useEffect } from 'react';
+import { Tabs } from 'antd';
+import { ProfileOutlined, StarOutlined } from '@ant-design/icons';
+import React, { useEffect, useState } from 'react';
 
-import { SocketContext } from '../context/SocketContext';
+import { BallotContext } from '../context/BallotContext';
+import { ioClient, SocketContext } from '../context/SocketContext';
 import ClientBallot from '../components/ClientBallot';
 import ClientRegistration from '../components/ClientRegistration';
-import ClientScorecard from '../components/ClientScorecard';
-import Preview from '../components/Preview';
+import Container from '../components/Container';
+import ScoreTable from '../components/ScoreTable';
 
 import '../App.less';
 
-const socket = io('http://localhost:3030/client');
-
 export default function Client() {
-  const [categories, setCategories] = useState([]);
-  const [contestants, setContestants] = useState([]);
+
+  // variables
+  const { TabPane } = Tabs;
+
+  // states
+  const [app, setApp] = useState({
+    categories: [],
+    name: 'TALLYVISION',
+  });
+  const [ballot, setBallot] = useState({
+    contestant: {},
+    open: false,
+  });
+  const [ballotScore, setBallotScore] = useState({});
+  const [scores, setScores] = useState([]);
+  const [view, setView] = useState('view_registration');
 
   useEffect(() => {
-    socket.on('appConnected', (data) => {
-      setCategories(data.categories);
-      setContestants(data.contestants);
+    ioClient.on('appBallot', (data) => {
+      setBallot(data);
+
+      if (data.open) {
+        setView('view_ballot');
+      } else {
+        setView('view_scoretable');
+      }
       
-      console.log('[App] Connected as client:', data.client);
+      console.log('[App] Ballot:', data);
     });
 
-    return () => socket.disconnect();
+    ioClient.on('appBallotScore', (data) => {
+      setBallotScore(data);
+      
+      console.log('[App] Ballot score:', data);
+    });
+
+    ioClient.on('appConnected', (data) => {
+      setApp(data);
+      setView('view_scoretable');
+      
+      console.log('[App] Connected as client:', data.name);
+    });
+
+    ioClient.on('appScores', (data) => {
+      setScores(data);
+      
+      console.log('[App] Scores:', data);
+    });
+
+    return () => ioClient.disconnect();
   }, []);
 
   return (
-    <SocketContext.Provider value={socket}>
-      <Preview>
-        <ClientRegistration />
-      </Preview>
-
-      <Preview>
-        <ClientBallot
-          categories={categories}
-          contestant={{
-            country: 'Country',
-            code: 'gb',
-            artist: 'Artist',
-            title: 'Title',
-            representative: '',
-          }}
-        />
-      </Preview>
-      
-      <Preview>
-        <ClientScorecard
-          categories={categories}
-          contestants={contestants}
-        />
-      </Preview>
+    <SocketContext.Provider value={ioClient}>
+      <BallotContext.Provider value={{
+        ballot: ballot,
+        ballotScore: ballotScore
+      }}>
+        <Container viewport="mobile">
+          <Tabs
+            activeKey={view}
+            centered
+            className="tv-clientTabs"
+            onTabClick={setView}
+          >
+            <TabPane
+              disabled={ioClient.connected}
+              key="view_registration"
+              tab={app.name}
+            >
+              <ClientRegistration />
+            </TabPane>
+            <TabPane
+              disabled={!ioClient.connected}
+              key="view_scoretable"
+              tab={<ProfileOutlined />}
+            >
+              <ScoreTable categories={app.categories} dataSource={scores} />
+            </TabPane>
+            <TabPane
+              disabled={!ioClient.connected || !ballot.open}
+              key="view_ballot"
+              tab={<StarOutlined />}
+            >
+              <ClientBallot categories={app.categories} />
+            </TabPane>
+          </Tabs>
+        </Container>
+      </BallotContext.Provider>
     </SocketContext.Provider>
   );
 }
