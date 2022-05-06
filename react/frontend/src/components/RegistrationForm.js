@@ -1,5 +1,6 @@
 import { Button, Form, Input, Typography } from 'antd';
 import { useContext } from 'react';
+import { useCookies } from 'react-cookie';
 
 import { SocketContext } from '../context/SocketContext';
 
@@ -22,12 +23,16 @@ export default function RegistrationForm() {
   const [form] = Form.useForm();
   const nameValue = Form.useWatch('name', form);
 
+  // cookies
+  const [cookies] = useCookies(['client']);
+
   // component
   return (
     <Form
       autoComplete="off"
       className="tv-registrationForm"
       form={form}
+      initialValues={{ name: cookies.tv_client_name }}
       layout='vertical'
       name="tv_registrationForm"
       onFinish={submitRegistration}
@@ -43,7 +48,11 @@ export default function RegistrationForm() {
           },
         ]}
       >
-        <Input maxLength={12} showCount size="large" />
+        <Input
+          maxLength={12}
+          showCount
+          size="large"
+        />
       </Form.Item>
       <Button
         block
