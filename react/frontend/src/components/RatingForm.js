@@ -1,4 +1,4 @@
-import { Button, Divider, Form, Rate } from 'antd';
+import { Button, Divider, Form, Modal, Rate } from 'antd';
 import { useContext } from 'react';
 
 import { BallotContext } from '../context/BallotContext';
@@ -14,15 +14,43 @@ export default function RatingForm({ categories }) {
   const submitBallot = (values) => {
     socket.emit('clientBallotSubmit', values);
 
-    console.log('[Client] Submitted ballot:', [ballot.contestant.code, values]);
+    console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
   };
+
+  const confirmBallot = (values) => {
+    var total = 0;
+
+    for (var cat_key in values) {
+      total += values[cat_key];
+    }
+
+    if (total > 0) {
+      submitBallot(values);
+    } else {
+      Modal.confirm({
+        cancelText: 'Nah',
+        okText: 'Ya, this sucks!',
+        title: 'Nul points?',
+        onOk() {
+          submitBallot(values);
+        },
+        onCancel() {
+          console.log('[Client] Cancelled nul points:', ballot.contestant.key);
+        },
+      });
+    }
+  }
+
+  // form
+  const [form] = Form.useForm();
 
   // component
   return (
     <Form
       className="tv-ratingForm"
+      form={form}
       name="tv_ratingForm"
-      onFinish={submitBallot}
+      onFinish={confirmBallot}
     >
       {categories.map((category) => (
         <div className="tv-ratingForm__category" key={category.key}>
