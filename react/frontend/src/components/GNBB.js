@@ -14,7 +14,7 @@ export default function GNBB() {
   const clickGNBB = () => {
     socket.emit('clientGNBB');
 
-    console.log('[Client] Clicked GNBB:', ballot.contestant.code);
+    console.log('[Client] Clicked GNBB:', ballot.contestant.key);
   };
 
   return (

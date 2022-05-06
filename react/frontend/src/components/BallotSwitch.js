@@ -11,19 +11,19 @@ export default function BallotSwitch({ dataTarget }) {
   const socket = useContext(SocketContext);
 
   // functions
-  function ballotClose() {
+  const ballotClose = () => {
     socket.emit('hostBallotClose');
   };
 
-  function ballotOpen() {
-    socket.emit('hostBallotOpen', dataTarget.code);
+  const ballotOpen = () => {
+    socket.emit('hostBallotOpen', dataTarget.key);
   };
 
   return (
     <div className="tv-ballotSwitch">
       <Switch
-        checked={ballot.open && (ballot.contestant.code === dataTarget.code)}
-        disabled={ballot.open && (ballot.contestant.code !== dataTarget.code)}
+        checked={ballot.open && (ballot.contestant.key === dataTarget.key)}
+        disabled={ballot.open && (ballot.contestant.key !== dataTarget.key)}
         onClick={(checked, event) => {
           checked ? ballotOpen() : ballotClose();
         }}

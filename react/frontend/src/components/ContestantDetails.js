@@ -9,14 +9,14 @@ export default function ContestantDetails({ contestant }) {
     <Row className="tv-contestantDetails" wrap={false}>
       <Skeleton
         avatar={{ size: 32 }}
-        loading={contestant.code ? false : true}
+        loading={contestant.key ? false : true}
         paragraph={{ rows: 1 }}
         title
       >
         <Col className="tv-contestantDetails__flag">
           <img
             alt="Flag"
-            src={process.env.PUBLIC_URL + '/media/flags/' + contestant.code + '.svg'}
+            src={process.env.PUBLIC_URL + '/media/flags/' + contestant.key + '.svg'}
           />
         </Col>
         <Col className="tv-contestantDetails__content" flex="auto">

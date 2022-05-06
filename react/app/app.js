@@ -122,8 +122,8 @@ ioHost.on('connection', (socket) => {
     }
   });
 
-  socket.on('hostBallotOpen', (code) => {
-    appContestantFind(code).then((contestant) => {
+  socket.on('hostBallotOpen', (key) => {
+    appContestantFind(key).then((contestant) => {
       appBallot.contestant = contestant;
       appBallot.open = true;
 
@@ -174,9 +174,9 @@ function appClientFind(socket) {
 }
 
 // find contestant details
-function appContestantFind(code) {
+function appContestantFind(key) {
   var found = appContestants.find((contestant) => {
-    return contestant.code === code;
+    return contestant.key === key;
   });
 
   return new Promise((resolve, reject) => {
@@ -201,7 +201,7 @@ function dbCreateTables() {
   gnbp  = `CREATE TABLE IF NOT EXISTS gnbp (`;
   gnbp += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
   gnbp += `client_name TEXT NOT NULL,`;
-  gnbp += `contestant_code TEXT NOT NULL);`;
+  gnbp += `contestant_key TEXT NOT NULL);`;
 
   db.run(gnbp, (err) => {
     if (err) {
@@ -219,7 +219,7 @@ function dbCreateTables() {
   votes  = `CREATE TABLE IF NOT EXISTS votes (`;
   votes += `uid INTEGER PRIMARY KEY AUTOINCREMENT,`;
   votes += `client_name TEXT NOT NULL,`;
-  votes += `contestant_code TEXT NOT NULL,`;
+  votes += `contestant_key TEXT NOT NULL,`;
   votes += `${columns},`
   votes += `total INTEGER NOT NULL);`;
 
@@ -239,8 +239,8 @@ function dbFilename() {
 
 // insert Graham Norton bitch point record for client and contestant
 function dbInsertGNBP(socket) {
-  var query = `INSERT INTO gnbp (client_name,contestant_code) VALUES (?,?)`;
-  var values = [socket.name, appBallot.contestant.code];
+  var query = `INSERT INTO gnbp (client_name,contestant_key) VALUES (?,?)`;
+  var values = [socket.name, appBallot.contestant.key];
 
   dbPromiseRun(query, values).then(() => {
     socket.emit('appGNBP', values);
@@ -265,11 +265,11 @@ function dbInsertVote(socket, scores) {
 
   query  = `INSERT INTO votes (`;
   query += `client_name,`;
-  query += `contestant_code,`;
+  query += `contestant_key,`;
   query += `${cat_columns},`;
   query += `total) VALUES (?,?,${cat_placeholders},?);`;
 
-  values = [socket.name, appBallot.contestant.code];
+  values = [socket.name, appBallot.contestant.key];
   values = values.concat(Object.values(scores));
 
   for (var cat_key in scores) {
@@ -332,9 +332,9 @@ function dbPromiseRun(query, params) {
 function dbQueryCategory(category, callback) {
   var query;
   
-  query  = `SELECT contestant_code,`;
+  query  = `SELECT contestant_key,`;
   query += `COUNT(client_name) votes,`;
-  query += `SUM(cat_${category.key}) score FROM votes GROUP BY contestant_code ORDER BY score DESC;`;
+  query += `SUM(cat_${category.key}) score FROM votes GROUP BY contestant_key ORDER BY score DESC;`;
 
   db.all(sql, (error, rows) => {
     if (error) {
@@ -352,8 +352,8 @@ function dbQueryClient(socket, contestant = undefined) {
   query = `SELECT * FROM votes WHERE client_name=?`;
 
   if (contestant) {
-    params = [socket.name, contestant.code];
-    query += ` AND contestant_code=?`;
+    params = [socket.name, contestant.key];
+    query += ` AND contestant_key=?`;
   } else {
     params = socket.name;
   }
@@ -365,8 +365,8 @@ function dbQueryClient(socket, contestant = undefined) {
 function dbQueryGNBP(callback) {
   var query;
   
-  query  = `SELECT contestant_code,`;
-  query += `COUNT(client_name) score FROM gnbp GROUP BY contestant_code ORDER BY score DESC;`;
+  query  = `SELECT contestant_key,`;
+  query += `COUNT(client_name) score FROM gnbp GROUP BY contestant_key ORDER BY score DESC;`;
 
   db.all(query, (error, rows) => {
     if (error) {
@@ -385,10 +385,10 @@ function dbQueryTotal() {
     return `SUM(cat_${category.key}) cat_${category.key}`;
   }).join(`,`);
   
-  query  = `SELECT contestant_code,`;
+  query  = `SELECT contestant_key,`;
   query += `COUNT(client_name) votes,`;
   query += `${cat_columns},`;
-  query += `SUM(total) total FROM votes GROUP BY contestant_code ORDER BY contestant_code ASC;`;
+  query += `SUM(total) total FROM votes GROUP BY contestant_key ORDER BY contestant_key ASC;`;
 
   return dbPromiseAll(query);
 }
@@ -468,7 +468,7 @@ function ioClientScores(socket) {
   dbQueryClient(socket).then((rows) => {
     for (var contestant of scores) {
       var found = rows.find((row) => {
-        return row.contestant_code === contestant.code;
+        return row.contestant_key === contestant.key;
       });
   
       if (found) {
@@ -512,7 +512,7 @@ function ioHostScores() {
   dbQueryTotal().then((rows) => {
     for (var contestant of scores) {
       var found = rows.find((row) => {
-        return row.contestant_code === contestant.code;
+        return row.contestant_key === contestant.key;
       });
   
       if (found) {

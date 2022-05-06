@@ -10,8 +10,8 @@ export default function ScoreTable({ categories, dataSource, host }) {
   const columns = [
     {
       align: 'left',
-      dataIndex: 'country',
-      key: 'country',
+      dataIndex: 'code',
+      key: 'code',
       render: (value, record) => (
         <ContestantDetails contestant={record} />
       ),
