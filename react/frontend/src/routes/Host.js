@@ -15,7 +15,7 @@ import '../App.less';
 export default function Host() {
 
   // variables
-  const { Content, Footer, Header, Sider } = Layout;
+  const { Content, Footer, Sider } = Layout;
   const { Panel } = Collapse;
 
   // states
