@@ -7,9 +7,11 @@ export default function RatingSummary({ categories, dataSource }) {
 
   return (
     <div className="tv-ratingSummary">
-      <Title className="tv-ratingSummary__title" level={1}>
-        {dataSource.total}
-      </Title>
+      <Row justify="center">
+        <Title className="tv-ratingSummary__total" level={1}>
+          {dataSource.total}
+        </Title>
+      </Row>
       <Row gutter={[32, 16]}>
         {categories.map((category) => (
           <Col key={category.key} xs={12}>
