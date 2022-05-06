@@ -11,12 +11,7 @@ body {
   font-family: 'Rubik', sans-serif;
 }
 
-.tv-clientBallot {
-  .tv-contestantDetails {
-    margin-bottom: 16px;
-  }
-}
-
+.tv-awardsTabs,
 .tv-clientTabs {
   .@{ant-prefix}-tabs {
     color: @primary-10;
@@ -48,6 +43,12 @@ body {
         margin: 0 16px;
       }
     }
+  }
+}
+
+.tv-clientBallot {
+  .tv-contestantDetails {
+    margin-bottom: 16px;
   }
 }
 
@@ -122,6 +123,7 @@ body {
   padding: 16px;
 
   &--desktop {
+    max-width: 1280px;
     min-width: 768px;
   }
 
@@ -205,16 +207,33 @@ body {
   .@{ant-prefix}-rate {
     &-star {
       .anticon svg {
-        height: 2.5em;
-        width: 2.5em;
+        height: 2.375em;
+        width: 2.375em;
       }
     }
   }
 }
 
 .tv-ratingSummary {
-  &__title {
-    text-align: center;
+  h1.@{ant-prefix}-typography {
+    color: @white;
+    line-height: 2em;
+    position: relative;
+    z-index: 1;
+
+    &:before {
+      background: @primary-color;
+      border-radius: 50%;
+      content: '';
+      display: block;
+      height: 2em;
+      left: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 2em;
+      z-index: -1;
+    }
   }
 }
 
@@ -258,7 +277,7 @@ body {
     min-width: 6rem;
   }
 
-  .tv-ratingSummary__title {
+  .tv-ratingSummary__total {
     display: none;
   }
 }
