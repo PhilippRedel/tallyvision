@@ -22,7 +22,7 @@ export default function RatingForm() {
       submitBallot(values);
     } else {
       Modal.confirm({
-        cancelText: 'Nah',
+        cancelText: 'Na',
         okText: 'Ya, this sucks!',
         title: 'Nul points?',
         onOk() {
