@@ -4,14 +4,12 @@ import { Tabs } from 'antd';
 import { useCookies } from 'react-cookie';
 import React, { useEffect, useState } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 import { ioClient, SocketContext } from '../context/SocketContext';
 import ClientBallot from '../components/ClientBallot';
 import ClientRegistration from '../components/ClientRegistration';
 import Container from '../components/Container';
 import ScoreTable from '../components/ScoreTable';
-
-import '../App.less';
 
 export default function Client() {
 
@@ -55,7 +53,6 @@ export default function Client() {
 
     ioClient.on('appConnected', (data) => {
       setApp(data);
-      setCookie('tv_client_name', data.name, { path: '/' });
       setView('view_scores');
       
       console.log('[App] Connected as client:', data.name);
@@ -68,18 +65,26 @@ export default function Client() {
     });
 
     return () => ioClient.disconnect();
+  }, []);
+
+  useEffect(() => {
+    ioClient.on('appConnected', (data) => {
+      setCookie('tv_client_name', data.name, { path: '/' });
+    });
   }, [setCookie]);
 
   return (
     <Container viewport="mobile">
       <CookiesProvider>
         <SocketContext.Provider value={ioClient}>
-          <BallotContext.Provider value={{
+          <AppContext.Provider value={{
+            app: app,
             ballot: ballot,
-            ballotScore: ballotScore
+            ballotScore: ballotScore,
           }}>
             <Tabs
               activeKey={view}
+              animated
               centered
               className="tv-clientTabs"
               onTabClick={setView}
@@ -98,19 +103,19 @@ export default function Client() {
                     key="view_scores"
                     tab={<ProfileOutlined />}
                   >
-                    <ScoreTable categories={app.categories} dataSource={scores} />
+                    <ScoreTable dataSource={scores} />
                   </TabPane>
                   <TabPane
                     disabled={!ioClient.connected || !ballot.open}
                     key="view_ballot"
                     tab={<StarOutlined />}
                   >
-                    <ClientBallot categories={app.categories} />
+                    <ClientBallot />
                   </TabPane>
                 </>
               }
             </Tabs>
-          </BallotContext.Provider>
+          </AppContext.Provider>
         </SocketContext.Provider>
       </CookiesProvider>
     </Container>

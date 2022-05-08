@@ -1,16 +1,14 @@
-import { Breadcrumb, Collapse, Layout } from 'antd';
-import { StarOutlined, UserOutlined } from '@ant-design/icons';
+import { Breadcrumb, Button, Collapse, Layout } from 'antd';
+import { StarOutlined, TrophyOutlined, UserOutlined } from '@ant-design/icons';
 import React, { useState, useEffect } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 import { ioHost, SocketContext } from '../context/SocketContext';
 import Container from '../components/Container';
 import ContestantDetails from '../components/ContestantDetails';
 import ScoreTable from '../components/ScoreTable';
 import SiderClientsTable from '../components/SiderClientsTable';
 import SiderHeading from '../components/SiderHeading';
-
-import '../App.less';
 
 export default function Host() {
 
@@ -31,6 +29,11 @@ export default function Host() {
   const [clients, setClients] = useState([]);
   const [scores, setScores] = useState([]);
 
+  // functions
+  const calculateAwards = () => {
+    ioHost.emit('hostAwardsCalculate');
+  }
+
   useEffect(() => {
     ioHost.on('appBallot', setBallot);
 
@@ -50,11 +53,11 @@ export default function Host() {
   return (
     <Container viewport="desktop">
       <SocketContext.Provider value={ioHost.connect()}>
-        <BallotContext.Provider value={ballot}>
+        <AppContext.Provider value={{ app: app, ballot: ballot }}>
           <Layout className="tv-hostLayout__outer">
             <Sider className="tv-hostLayout__sider" width={240}>
               <Collapse
-                defaultActiveKey={['key_clients', 'key_voting']}
+                defaultActiveKey={['panel_clients', 'panel_ballot']}
                 expandIconPosition="right"
                 ghost
               >
@@ -66,7 +69,7 @@ export default function Host() {
                       title="Clients"
                     />
                   }
-                  key="key_clients"
+                  key="panel_clients"
                 >
                   <SiderClientsTable dataSource={clients} />
                 </Panel>
@@ -78,9 +81,27 @@ export default function Host() {
                       title="Ballot"
                     />
                   }
-                  key="key_voting"
+                  key="panel_ballot"
                 >
                   <ContestantDetails contestant={ballot.contestant} />
+                </Panel>
+                <Panel
+                  header={
+                    <SiderHeading
+                      icon={<TrophyOutlined />}
+                      title="Awards"
+                    />
+                  }
+                  key="panel_awards"
+                >
+                  <Button
+                    block
+                    ghost
+                    onClick={calculateAwards}
+                    type="primary"
+                  >
+                    Calculate
+                  </Button>
                 </Panel>
               </Collapse>
             </Sider>
@@ -90,18 +111,14 @@ export default function Host() {
                   <Breadcrumb.Item>DB</Breadcrumb.Item>
                   <Breadcrumb.Item>{app.db}</Breadcrumb.Item>
                 </Breadcrumb>
-                <ScoreTable
-                  categories={app.categories}
-                  dataSource={scores}
-                  host
-                />
+                <ScoreTable dataSource={scores} host />
                 <Footer className="tv-hostLayout__footer">
                   Version <span className="ver">{app.version}</span>
                 </Footer>
               </Content>
             </Layout>
           </Layout>
-        </BallotContext.Provider>
+        </AppContext.Provider>
       </SocketContext.Provider>
     </Container>
   );

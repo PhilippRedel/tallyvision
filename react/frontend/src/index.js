@@ -7,6 +7,8 @@ import Client from './routes/Client';
 import Host from './routes/Host';
 import reportWebVitals from './reportWebVitals';
 
+import './App.less';
+
 ReactDOM.render(
   <BrowserRouter>
     <Routes>
