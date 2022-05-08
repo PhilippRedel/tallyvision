@@ -11,6 +11,36 @@ body {
   font-family: 'Rubik', sans-serif;
 }
 
+.tv-awardsBanner {
+  align-items: center;
+  display: flex;
+
+  &__text {
+    font-family: 'Codystar', cursive;
+    font-size: 4rem;
+    letter-spacing: 4px;
+    line-height: 1.25;
+    text-transform: uppercase;
+  }
+
+  .neon {
+    &__flicker-1 {
+      animation: shine 2s forwards, blink 3s 2s infinite;
+    }
+  
+    &__flicker-2 {
+      animation: shine 2s forwards, blink 10s 1s infinite;
+    }
+  
+    &__row {
+      animation: shine 2s forwards, flicker 3s infinite;
+      color: @white;
+      text-shadow: 0 0 0.6rem @magenta-1, 0 0 1.5rem @magenta-4, -0.2rem 0.1rem 1rem @magenta-4,
+        0.2rem 0.1rem 1rem @magenta-4, 0 -0.5rem 2rem @magenta-6, 0 0.5rem 3rem @magenta-6;
+    }
+  }
+}
+
 .tv-awardsTable,
 .tv-scoreTable {
   .@{ant-prefix}-table-column-sorter {
@@ -381,64 +411,22 @@ body {
   }
 }
 
-
-
-.tv-awardsBanner {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-
-  &__text {
-    color: @white;
-    font-family: 'Codystar', cursive;
-    font-size: 4rem;
-    line-height: 1.25;
-    padding-right: 50px;
-    text-transform: uppercase;
-  }
-}
-
-.sign {
-  animation: shine 2s forwards, flicker 3s infinite;
-  color: @white;
-  font-family: 'Codystar', cursive;
-  font-size: 4rem;
-  letter-spacing: 4px;
-  line-height: 1.25;
-  text-transform: uppercase;
-  text-shadow: 0 0 0.6rem #ffe6ff, 0 0 1.5rem #ff65bd,
-    -0.2rem 0.1rem 1rem #ff65bd, 0.2rem 0.1rem 1rem #ff65bd,
-    0 -0.5rem 2rem #ff2483, 0 0.5rem 3rem #ff2483;
-}
-
 @keyframes blink {
-  0%,
-  22%,
-  36%,
-  75% {
-    color: #ffe6ff;
-    text-shadow: 0 0 0.6rem #ffe6ff, 0 0 1.5rem #ff65bd,
-      -0.2rem 0.1rem 1rem #ff65bd, 0.2rem 0.1rem 1rem #ff65bd,
-      0 -0.5rem 2rem #ff2483, 0 0.5rem 3rem #ff2483;
+  0%, 22%, 36%, 75% {
+    color: @magenta-1;
+    text-shadow: 0 0 0.6rem @magenta-1, 0 0 1.5rem @magenta-4, -0.2rem 0.1rem 1rem @magenta-4,
+      0.2rem 0.1rem 1rem @magenta-4, 0 -0.5rem 2rem @magenta-6, 0 0.5rem 3rem @magenta-6;
   }
-  28%,
-  33% {
-    color: #ff65bd;
+
+  28%, 33% {
+    color: @magenta-4;
     text-shadow: none;
   }
-  82%,
-  97% {
-    color: #ff2483;
+
+  82%, 97% {
+    color: @magenta-6;
     text-shadow: none;
   }
-}
-
-.flicker {
-  animation: shine 2s forwards, blink 3s 2s infinite;
-}
-
-.fast-flicker {
-  animation: shine 2s forwards, blink 10s 1s infinite;
 }
 
 @keyframes shine {
@@ -446,11 +434,11 @@ body {
     color: #6b1839;
     text-shadow: none;
   }
+
   100% {
-    color: #ffe6ff;
-    text-shadow: 0 0 0.6rem #ffe6ff, 0 0 1.5rem #ff65bd,
-      -0.2rem 0.1rem 1rem #ff65bd, 0.2rem 0.1rem 1rem #ff65bd,
-      0 -0.5rem 2rem #ff2483, 0 0.5rem 3rem #ff2483;
+    color: @magenta-1;
+    text-shadow: 0 0 0.6rem @magenta-1, 0 0 1.5rem @magenta-4, -0.2rem 0.1rem 1rem @magenta-4,
+      0.2rem 0.1rem 1rem @magenta-4, 0 -0.5rem 2rem @magenta-6, 0 0.5rem 3rem @magenta-6;
   }
 }
 

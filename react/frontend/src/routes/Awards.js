@@ -21,7 +21,7 @@ export default function Awards() {
   const [awardsCategory, setAwardsCategory] = useState([]);
   const [awardsGNBP, setAwardsGNBP] = useState([]);
   const [awardsTotal, setAwardsTotal] = useState([]);
-  const [view, setView] = useState('view_awards');
+  const [view, setView] = useState('tab_awards');
 
   useEffect(() => {
     ioAwards.on('appAwardsCategory', (data) => {
@@ -63,7 +63,7 @@ export default function Awards() {
             onTabClick={setView}
           >
             <TabPane
-              key="view_awards"
+              key="tab_awards"
               tab={<TrophyOutlined />}
             >
               <div className="tv-awardsBanner">
@@ -74,45 +74,34 @@ export default function Awards() {
                   />
                 </div>
                 <div className="tv-awardsBanner__text">
-                  {/*}
-                  <div class="sign">
-                    P<span class="fast-flicker">e</span>ople's
-                  </div>
-                  <div class="sign">
-                    Choice
-                  </div>
-                  <div class="sign">
-                    Awa<span class="fast-flicker">r</span>ds 202<span class="flicker">2</span>
-                  </div>
-                  */}
-                  <div className="sign">
+                  <div className="neon__row">
                     People's
                   </div>
-                  <div className="sign">
+                  <div className="neon__row">
                     Choice
                   </div>
-                  <div className="sign">
-                    Awards 2022
+                  <div className="neon__row">
+                    Awards 2<span className="neon__flicker-1">0</span>22
                   </div>
                 </div>
               </div>
             </TabPane>
             {app.categories.map((category) => (
               <TabPane
-                key={`view_${category.key}`}
+                key={`tab_${category.key}`}
                 tab={category.label}
               >
                 <AwardsTable dataSource={awardsCategory[category.key]} />
               </TabPane>
             ))}
             <TabPane
-              key="view_gnbp"
+              key="tab_gnbp"
               tab={<FrownOutlined />}
             >
               <AwardsTable dataSource={awardsGNBP} />
             </TabPane>
             <TabPane
-              key="view_total"
+              key="tab_total"
               tab={<CrownOutlined />}
             >
               <AwardsTable

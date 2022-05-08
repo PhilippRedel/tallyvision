@@ -14,6 +14,7 @@ import ScoreTable from '../components/ScoreTable';
 export default function Client() {
 
   // variables
+  const [cookies, setCookie] = useCookies(['client']);
   const { TabPane } = Tabs;
 
   // states
@@ -27,10 +28,7 @@ export default function Client() {
   });
   const [ballotScore, setBallotScore] = useState({});
   const [scores, setScores] = useState([]);
-  const [view, setView] = useState('tab_auth');
-
-  // cookies
-  const [cookies, setCookie] = useCookies(['client']);
+  const [view, setView] = useState('tab_registration');
 
   useEffect(() => {
     ioClient.on('appBallot', (data) => {
@@ -91,7 +89,7 @@ export default function Client() {
             >
               <TabPane
                 disabled={ioClient.connected}
-                key="tab_auth"
+                key="tab_registration"
                 tab={app.name}
               >
                 <Card bordered={false}>
