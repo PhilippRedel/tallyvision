@@ -1,6 +1,6 @@
 {
-  "name": "tallyvision-backend",
-  "version": "22.5.5",
+  "name": "tallyvision",
+  "version": "22.5.8",
   "private": true,
   "scripts": {
     "start": "node ./bin/www"

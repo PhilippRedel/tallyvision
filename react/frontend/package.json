@@ -1,6 +1,6 @@
 {
   "name": "tallyvision-frontend",
-  "version": "22.5.5",
+  "version": "22.5.8",
   "private": true,
   "dependencies": {
     "@craco/craco": "^6.4.3",
