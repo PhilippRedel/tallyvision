@@ -28,6 +28,7 @@ const io = require('socket.io')(server, {
     methods: ['GET', 'POST'],
   }
 });
+const ioAwards = io.of('/awards');
 const ioClient = io.of('/client');
 const ioHost = io.of('/host');
 
@@ -75,6 +76,16 @@ ioClient.use((socket, next) => {
   }
 });
 
+ioAwards.on('connection', (socket) => {
+  ioAwards.emit('appConnected', {
+    categories: appCategories,
+    db: dbFilename(),
+    version: appVersion,
+  }, () => {
+    console.log('[IO] Awards connected:', socket.id);
+  });
+});
+
 ioClient.on('connection', (socket) => {
   ioClientConnect(socket);
 
@@ -117,9 +128,9 @@ ioHost.on('connection', (socket) => {
   ioHostConnect(socket);
 
   socket.on('hostAwardsCalculate', () => {
-    ioHostAwardsCategory();
-    ioHostAwardsGNBP();
-    ioHostAwardsTotal();
+    ioAwardsCategory();
+    ioAwardsGNBP();
+    ioAwardsTotal();
   });
 
   socket.on('hostBallotClose', () => {
@@ -414,6 +425,33 @@ function dbQueryTotal() {
   return dbPromiseAll(query);
 }
 
+// send calculated category awards to host
+async function ioAwardsCategory() {
+  var scores = {};
+
+  for (var category of appCategories) {
+    await dbQueryCategory(category).then((rows) => {
+      scores[category.key] = appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key');
+    });
+  }
+
+  ioAwards.emit('appAwardsCategory', scores);
+}
+
+// send calculated GNBP awards to host
+function ioAwardsGNBP() {
+  dbQueryGNBP().then((rows) => {
+    ioAwards.emit('appAwardsGNBP', appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key'));
+  });
+}
+
+// send calculated total awards to host
+async function ioAwardsTotal() {
+  dbQueryTotal().then((rows) => {
+    ioAwards.emit('appAwardsTotal', appScoreTable(rows, appContestants, 'contestant_key', 'key'));
+  });
+}
+
 // send ballot data to client(s)
 function ioClientBallot(socket = undefined) {
   if (socket) {
@@ -490,33 +528,6 @@ function ioClientScores(socket) {
     return appScoreTable(contestants, rows, 'key', 'contestant_key');
   }).then((scores) => {
     socket.emit('appScores', scores);
-  });
-}
-
-// send calculated category awards to host
-async function ioHostAwardsCategory() {
-  var scores = {};
-
-  for (var category of appCategories) {
-    await dbQueryCategory(category).then((rows) => {
-      scores[category.key] = appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key');
-    });
-  }
-
-  ioHost.emit('appAwardsCategory', scores);
-}
-
-// send calculated GNBP awards to host
-function ioHostAwardsGNBP() {
-  dbQueryGNBP().then((rows) => {
-    ioHost.emit('appAwardsGNBP', appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key'));
-  });
-}
-
-// send calculated total awards to host
-async function ioHostAwardsTotal() {
-  dbQueryTotal().then((rows) => {
-    ioHost.emit('appAwardsTotal', appScoreTable(rows, appContestants, 'contestant_key', 'key'));
   });
 }
 

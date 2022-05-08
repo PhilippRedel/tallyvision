@@ -36,7 +36,6 @@ export default function AwardsTable({ dataSource, total }) {
         ),
         title: 'Total',
       },
-      Table.EXPAND_COLUMN,
     ] : [
       {
         align: 'center',

@@ -3,7 +3,7 @@ import { Tabs } from 'antd';
 import React, { useEffect, useState } from 'react';
 
 import { AppContext } from '../context/AppContext';
-import { ioHost, SocketContext } from '../context/SocketContext';
+import { ioAwards, SocketContext } from '../context/SocketContext';
 import AwardsTable from '../components/AwardsTable';
 import Container from '../components/Container';
 
@@ -24,36 +24,36 @@ export default function Awards() {
   const [view, setView] = useState('view_awards');
 
   useEffect(() => {
-    ioHost.on('appAwardsCategory', (data) => {
+    ioAwards.on('appAwardsCategory', (data) => {
       setAwardsCategory(data);
 
       console.log('[App] Category awards:', data);
     });
 
-    ioHost.on('appAwardsGNBP', (data) => {
+    ioAwards.on('appAwardsGNBP', (data) => {
       setAwardsGNBP(data);
 
       console.log('[App] GNBP awards:', data);
     });
 
-    ioHost.on('appAwardsTotal', (data) => {
+    ioAwards.on('appAwardsTotal', (data) => {
       setAwardsTotal(data);
 
       console.log('[App] Total awards:', data);
     });
 
-    ioHost.on('appConnected', (data) => {
+    ioAwards.on('appConnected', (data) => {
       setApp(data);
 
       console.log('[App] Connected as host:', data);
     });
 
-    return () => ioHost.disconnect();
+    return () => ioAwards.disconnect();
   }, []);
 
   return (
     <Container viewport="television">
-      <SocketContext.Provider value={ioHost.connect()}>
+      <SocketContext.Provider value={ioAwards.connect()}>
         <AppContext.Provider value={{ app: app }}>
           <Tabs
             activeKey={view}
@@ -85,13 +85,13 @@ export default function Awards() {
                     Awa<span class="fast-flicker">r</span>ds 202<span class="flicker">2</span>
                   </div>
                   */}
-                  <div class="sign">
+                  <div className="sign">
                     People's
                   </div>
-                  <div class="sign">
+                  <div className="sign">
                     Choice
                   </div>
-                  <div class="sign">
+                  <div className="sign">
                     Awards 2022
                   </div>
                 </div>
