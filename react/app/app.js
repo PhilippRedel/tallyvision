@@ -61,7 +61,7 @@ const appVersion = process.env.npm_package_version;
 // app variables
 var appBallot = appBallotDefault();
 var appClients = [];
-var appHostPin = appHostPin();
+var appHostPin = appHostPinGenerate();
 
 ioClient.use((socket, next) => {
   var auth = socket.handshake.auth;
@@ -99,6 +99,18 @@ ioClient.on('connection', (socket) => {
       ioHostClients();
     });
   });
+});
+
+ioHost.use((socket, next) => {
+  var auth = socket.handshake.auth;
+
+  if (auth.pin === appHostPin) {  
+    console.log('AUTH');
+
+    next();
+  } else {
+    next(new Error('incorrect host pin'));
+  }
 });
 
 ioHost.on('connection', (socket) => {
@@ -194,8 +206,8 @@ function appContestantFind(key) {
   });
 }
 
-// set pin for host
-function appHostPin() {
+// generate host pin
+function appHostPinGenerate() {
   return Math.floor(1000 + Math.random() * 9000);
 }
 
@@ -449,9 +461,9 @@ function ioClientConnect(socket) {
     });
 
     return client;
-  }).then((client) => {
+  }).then(async (client) => {
     if (appBallot.open) {
-      dbQueryClient(socket, appBallot.contestant).then((rows) => {
+      await dbQueryClient(socket, appBallot.contestant).then((rows) => {
         client.voted = rows.length > 0;
       });
     }
