@@ -71,7 +71,7 @@ export default function ScoreTable({ categories, dataSource, host }) {
           ),
           expandRowByClick: true,
           expandedRowClassName: () => 'debug',
-          rowExpandable: (record) => record.total,
+          rowExpandable: (record) => record.total !== undefined,
           showExpandColumn: false,
         }}
       locale={{ emptyText: 'No contestants found' }}
