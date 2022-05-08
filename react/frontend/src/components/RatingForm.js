@@ -9,6 +9,8 @@ export default function RatingForm() {
   // variables
   const { app, ballot } = useContext(AppContext);
   const socket = useContext(SocketContext);
+  const textCancel = ['Ne', 'Nein', 'Nej', 'Ni', 'No', 'Non'];
+  const textOK = ['Ano', 'Da', 'Ja', 'Oui', 'Sì', 'Tak'];
 
   // functions
   const confirmBallot = (values) => {
@@ -22,8 +24,8 @@ export default function RatingForm() {
       submitBallot(values);
     } else {
       Modal.confirm({
-        cancelText: 'Na',
-        okText: 'Ya, this sucks!',
+        cancelText: textRandom(textCancel),
+        okText: `${textRandom(textOK)}, this sucks!`,
         title: 'Nul points?',
         onOk() {
           submitBallot(values);
@@ -40,6 +42,10 @@ export default function RatingForm() {
 
     console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
   };
+
+  const textRandom = (arr) => {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
 
   // form
   const [form] = Form.useForm();
