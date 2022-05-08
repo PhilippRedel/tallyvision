@@ -1,8 +1,8 @@
-export default function Container({ children, className, viewport = '' }) {
+export default function Container({ children, viewport = '' }) {
 
   // component
   return (
-    <div className={`tv-container tv-container--${viewport} ${className}`}>
+    <div className={`tv-container tv-container--${viewport}`}>
       {children}
     </div>
   );
