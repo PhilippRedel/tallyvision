@@ -22,7 +22,7 @@ export default function ScoreTable({ categories, dataSource, host }) {
     ...(host ? [
       {
         align: 'center',
-        className: 'tv-col--nowrap',
+        className: 'tv-col--min tv-col--nowrap',
         key: 'ballot',
         render: (value, record) => (
           <BallotSwitch dataTarget={record} />
@@ -31,19 +31,19 @@ export default function ScoreTable({ categories, dataSource, host }) {
       },
       {
         align: 'center',
-        className: 'tv-col--nowrap',
+        className: 'tv-col--min tv-col--nowrap',
         dataIndex: 'votes',
         title: 'Votes',
       },
       {
         align: 'center',
-        className: 'tv-col--nowrap',
+        className: 'tv-col--min tv-col--nowrap',
         dataIndex: 'total',
         render: (value) => (
           <span className="tv-txt--hidden">{value}</span>
         ),
         title: 'Total',
-      }
+      },
     ] : [
       {
         align: 'center',
@@ -53,7 +53,6 @@ export default function ScoreTable({ categories, dataSource, host }) {
         sorter: (a, b) => (a.total ? a.total : 0) - (b.total ? b.total : 0),
         title: 'Total',
       },
-      Table.EXPAND_COLUMN,
     ]),
   ];
 
@@ -64,12 +63,17 @@ export default function ScoreTable({ categories, dataSource, host }) {
       className="tv-scoreTable"
       columns={columns}
       dataSource={dataSource}
-      expandable={host ? false : {
-        expandedRowRender: (record) => (
-          <RatingSummary categories={categories} dataSource={record} />
-        ),
-        rowExpandable: (record) => record.total,
-      }}
+      expandable={host
+        ? false
+        : {
+          expandedRowRender: (record) => (
+            <RatingSummary values={record} xs={12} />
+          ),
+          expandRowByClick: true,
+          expandedRowClassName: () => 'debug',
+          rowExpandable: (record) => record.total,
+          showExpandColumn: false,
+        }}
       locale={{ emptyText: 'No contestants found' }}
       pagination={false}
     />
