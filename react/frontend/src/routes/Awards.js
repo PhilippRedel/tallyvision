@@ -59,7 +59,7 @@ export default function Awards() {
             activeKey={view}
             animated
             centered
-            className="tv-awardsTabs"
+            className="tv-navTabs"
             onTabClick={setView}
           >
             <TabPane

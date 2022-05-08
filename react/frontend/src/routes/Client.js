@@ -1,14 +1,14 @@
 import { CookiesProvider } from 'react-cookie';
 import { ProfileOutlined, StarOutlined } from '@ant-design/icons';
-import { Tabs } from 'antd';
+import { Card, Tabs } from 'antd';
 import { useCookies } from 'react-cookie';
 import React, { useEffect, useState } from 'react';
 
 import { AppContext } from '../context/AppContext';
 import { ioClient, SocketContext } from '../context/SocketContext';
-import ClientBallot from '../components/ClientBallot';
-import ClientRegistration from '../components/ClientRegistration';
+import Ballot from '../components/Ballot';
 import Container from '../components/Container';
+import RegistrationForm from '../components/RegistrationForm';
 import ScoreTable from '../components/ScoreTable';
 
 export default function Client() {
@@ -27,7 +27,7 @@ export default function Client() {
   });
   const [ballotScore, setBallotScore] = useState({});
   const [scores, setScores] = useState([]);
-  const [view, setView] = useState('view_registration');
+  const [view, setView] = useState('tab_auth');
 
   // cookies
   const [cookies, setCookie] = useCookies(['client']);
@@ -37,9 +37,9 @@ export default function Client() {
       setBallot(data);
 
       if (data.open) {
-        setView('view_ballot');
+        setView('tab_ballot');
       } else {
-        setView('view_scores');
+        setView('tab_scores');
       }
       
       console.log('[App] Ballot:', data);
@@ -53,7 +53,7 @@ export default function Client() {
 
     ioClient.on('appConnected', (data) => {
       setApp(data);
-      setView('view_scores');
+      setView('tab_scores');
       
       console.log('[App] Connected as client:', data.name);
     });
@@ -86,31 +86,33 @@ export default function Client() {
               activeKey={view}
               animated
               centered
-              className="tv-clientTabs"
+              className="tv-navTabs"
               onTabClick={setView}
             >
               <TabPane
                 disabled={ioClient.connected}
-                key="view_registration"
+                key="tab_auth"
                 tab={app.name}
               >
-                <ClientRegistration />
+                <Card bordered={false}>
+                  <RegistrationForm />
+                </Card>
               </TabPane>
               {ioClient.connected &&
                 <>
                   <TabPane
                     disabled={!ioClient.connected}
-                    key="view_scores"
+                    key="tab_scores"
                     tab={<ProfileOutlined />}
                   >
                     <ScoreTable dataSource={scores} />
                   </TabPane>
                   <TabPane
                     disabled={!ioClient.connected || !ballot.open}
-                    key="view_ballot"
+                    key="tab_ballot"
                     tab={<StarOutlined />}
                   >
-                    <ClientBallot />
+                    <Ballot />
                   </TabPane>
                 </>
               }
