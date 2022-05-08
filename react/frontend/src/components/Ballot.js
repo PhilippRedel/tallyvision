@@ -7,7 +7,7 @@ import GNBB from './GNBB';
 import RatingForm from './RatingForm';
 import RatingSummary from './RatingSummary';
 
-export default function ClientBallot() {
+export default function Ballot() {
 
   // variables
   const { ballot, ballotScore } = useContext(AppContext);

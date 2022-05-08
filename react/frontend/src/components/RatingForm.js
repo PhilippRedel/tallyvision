@@ -11,12 +11,6 @@ export default function RatingForm() {
   const socket = useContext(SocketContext);
 
   // functions
-  const submitBallot = (values) => {
-    socket.emit('clientBallotSubmit', values);
-
-    console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
-  };
-
   const confirmBallot = (values) => {
     var total = 0;
 
@@ -41,20 +35,26 @@ export default function RatingForm() {
     }
   }
 
+  const submitBallot = (values) => {
+    socket.emit('clientBallotSubmit', values);
+
+    console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
+  };
+
   // form
   const [form] = Form.useForm();
 
   // component
   return (
     <Form
-      className="tv-ratingForm"
+      className="tv-form tv-form__rating"
       form={form}
-      name="tv_ratingForm"
+      name="form_rating"
       onFinish={confirmBallot}
     >
       {app.categories.map((category) => (
-        <div className="tv-ratingForm__category" key={category.key}>
-          <Divider className="tv-ratingForm__title">
+        <div className="tv-form__category" key={category.key}>
+          <Divider>
             {category.label}
           </Divider>
           <Form.Item
@@ -63,7 +63,6 @@ export default function RatingForm() {
             required
           >
             <Rate
-              className="tv-ratingForm__rating"
               count={category.max}
               disabled={!ballot.open}
             />

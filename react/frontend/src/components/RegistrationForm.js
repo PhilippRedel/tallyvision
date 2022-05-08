@@ -30,11 +30,11 @@ export default function RegistrationForm() {
   return (
     <Form
       autoComplete="off"
-      className="tv-registrationForm"
+      className="tv-form tv-form__registration"
       form={form}
       initialValues={{ name: cookies.tv_client_name }}
-      layout='vertical'
-      name="tv_registrationForm"
+      layout="vertical"
+      name="form_registration"
       onFinish={submitRegistration}
       requiredMark={false}
     >
