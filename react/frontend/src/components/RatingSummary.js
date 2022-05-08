@@ -1,19 +1,23 @@
 import { Col, Rate, Row, Typography } from 'antd';
+import { useContext } from 'react';
 
-export default function RatingSummary({ categories, dataSource }) {
+import { AppContext } from '../context/AppContext';
+
+export default function RatingSummary({ values }) {
 
   // variables
+  const { app } = useContext(AppContext);
   const { Text, Title } = Typography;
 
   return (
     <div className="tv-ratingSummary">
       <Row justify="center">
         <Title className="tv-ratingSummary__total" level={1}>
-          {dataSource.total}
+          {values.total}
         </Title>
       </Row>
       <Row gutter={[32, 16]}>
-        {categories.map((category) => (
+        {app.categories.map((category) => (
           <Col key={category.key} xs={12}>
             <Text>
               {category.label}
@@ -21,7 +25,7 @@ export default function RatingSummary({ categories, dataSource }) {
             <Rate
               count={category.max}
               disabled
-              value={dataSource[`cat_${category.key}`]}
+              value={values[`cat_${category.key}`]}
             />
           </Col>
         ))}

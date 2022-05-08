@@ -1,13 +1,13 @@
 import { Button, Form } from 'antd';
 import { useContext } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 import { SocketContext } from '../context/SocketContext';
 
 export default function GNBB() {
 
   // variables
-  const { ballot } = useContext(BallotContext);
+  const { ballot } = useContext(AppContext);
   const socket = useContext(SocketContext);
 
   // functions

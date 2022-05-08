@@ -2,12 +2,12 @@ import { Badge, Table } from 'antd';
 import { CheckCircleFilled, LoadingOutlined } from '@ant-design/icons';
 import { useContext } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 
 export default function SiderClientsTable({ dataSource }) {
 
   // variables
-  const ballot = useContext(BallotContext);
+  const { ballot } = useContext(AppContext);
   const columns = [
     {
       align: 'left',

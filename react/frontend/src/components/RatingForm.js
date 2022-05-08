@@ -1,13 +1,13 @@
 import { Button, Divider, Form, Modal, Rate } from 'antd';
 import { useContext } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 import { SocketContext } from '../context/SocketContext';
 
-export default function RatingForm({ categories }) {
+export default function RatingForm() {
 
   // variables
-  const { ballot } = useContext(BallotContext);
+  const { app, ballot } = useContext(AppContext);
   const socket = useContext(SocketContext);
 
   // functions
@@ -52,7 +52,7 @@ export default function RatingForm({ categories }) {
       name="tv_ratingForm"
       onFinish={confirmBallot}
     >
-      {categories.map((category) => (
+      {app.categories.map((category) => (
         <div className="tv-ratingForm__category" key={category.key}>
           <Divider className="tv-ratingForm__title">
             {category.label}

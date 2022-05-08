@@ -1,16 +1,16 @@
 import { Card } from 'antd';
 import { useContext } from 'react';
 
-import { BallotContext } from '../context/BallotContext';
+import { AppContext } from '../context/AppContext';
 import ContestantDetails from './ContestantDetails';
 import GNBB from './GNBB';
 import RatingForm from './RatingForm';
 import RatingSummary from './RatingSummary';
 
-export default function ClientBallot({ categories }) {
+export default function ClientBallot() {
 
   // variables
-  const { ballot, ballotScore } = useContext(BallotContext);
+  const { ballot, ballotScore } = useContext(AppContext);
 
   // component
   return (
@@ -18,8 +18,8 @@ export default function ClientBallot({ categories }) {
       <Card bordered={false}>
         <ContestantDetails contestant={ballot.contestant} />
         {ballotScore.uid
-          ? <RatingSummary categories={categories} dataSource={ballotScore} />
-          : <RatingForm categories={categories} />
+          ? <RatingSummary values={ballotScore} />
+          : <RatingForm />
         }
       </Card>
       <GNBB />
