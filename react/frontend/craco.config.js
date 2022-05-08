@@ -12,6 +12,7 @@ module.exports = {
               '@btn-text-hover-bg': 'rgba(0, 0, 0, 0.05)',
               '@card-padding-base': '1rem',
               '@card-radius': '1rem',
+              '@control-border-radius': '0.334rem',
               '@primary-color': '#9254de',
               '@table-border-radius-base': '1rem',
             },
