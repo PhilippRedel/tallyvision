@@ -15,7 +15,7 @@ export default function ContestantDetails({ contestant }) {
       >
         <Col className="tv-contestantDetails__flag">
           <img
-            alt="Flag"
+            alt="Flag icon"
             src={process.env.PUBLIC_URL + '/media/flags/' + contestant.key + '.svg'}
           />
         </Col>
