@@ -39,51 +39,6 @@ body {
   }
 }
 
-.tv-awardsTabs,
-.tv-clientTabs {
-  .@{ant-prefix}-tabs {
-    color: @primary-10;
-
-    &-ink-bar {
-      background: @white;
-    }
-
-    &-nav {
-      &:before {
-        border-color: transparent;
-      }
-    }
-
-    &-tab {
-      text-transform: uppercase;
-
-      &:hover {
-        color: @primary-7;
-      }
-
-      &-active {
-        .@{ant-prefix}-tabs-tab-btn {
-          color: @white;
-        }
-      }
-
-      .anticon {
-        margin: 0 16px;
-      }
-    }
-
-    &-tabpane {
-      opacity: 0;
-      transition: visibility 0s linear 500ms, opacity 500ms;
-
-      &-active {
-        opacity: 1;
-        transition: visibility 0s linear 0s, opacity 500ms;
-      }
-    }
-  }
-}
-
 .tv-clientBallot {
   .tv-contestantDetails {
     margin-bottom: 16px;
@@ -133,6 +88,48 @@ body {
   }
 }
 
+.tv-form,
+.tv-ratingSummary {
+  .@{ant-prefix}-rate {
+    display: flex;
+    justify-content: space-between;
+
+    &-star {
+      display: flex;
+
+      &:not(:last-child) {
+        margin-right: 0;
+      }
+    }
+  }
+}
+
+.tv-form {
+  h5 {
+    margin-bottom: 0;
+  }
+
+  &__rating {
+    .@{ant-prefix}-rate {
+      &-star {
+        .anticon svg {
+          height: 2.375em;
+          width: 2.375em;
+        }
+      }
+    }
+  }
+
+  &__registration {
+    .@{ant-prefix}-input-affix-wrapper {
+      > input.@{ant-prefix}-input {
+        border-radius: 0;
+        text-transform: uppercase;
+      }
+    }
+  }
+}
+
 .tv-GNBB {
   display: flex;
   margin-top: 24px;
@@ -167,12 +164,16 @@ body {
   padding: 16px;
 
   &--desktop {
-    min-width: 768px;
+    min-width: 1024px;
   }
 
   &--mobile {
     max-width: 414px;
     min-width: 320px;
+  }
+
+  &--nopad {
+    padding: 0;
   }
 
   &--television {
@@ -198,7 +199,7 @@ body {
   
   &__outer {
     border-radius: 0.334rem;
-    height: calc(100vh - 32px);
+    height: calc(100vh - 94px);
     overflow: hidden;
   }
 
@@ -235,28 +236,45 @@ body {
   }
 }
 
-.tv-ratingForm,
-.tv-ratingSummary {
-  .@{ant-prefix}-rate {
-    display: flex;
-    justify-content: space-between;
+.tv-navTabs {
+  .@{ant-prefix}-tabs {
+    color: @primary-10;
 
-    &-star {
-      display: flex;
+    &-ink-bar {
+      background: @white;
+    }
 
-      &:not(:last-child) {
-        margin-right: 0;
+    &-nav {
+      &:before {
+        border-color: transparent;
       }
     }
-  }
-}
 
-.tv-ratingForm {
-  .@{ant-prefix}-rate {
-    &-star {
-      .anticon svg {
-        height: 2.375em;
-        width: 2.375em;
+    &-tab {
+      text-transform: uppercase;
+
+      &:hover {
+        color: @primary-7;
+      }
+
+      &-active {
+        .@{ant-prefix}-tabs-tab-btn {
+          color: @white;
+        }
+      }
+
+      .anticon {
+        margin: 0 16px;
+      }
+    }
+
+    &-tabpane {
+      opacity: 0;
+      transition: visibility 0s linear 500ms, opacity 500ms;
+
+      &-active {
+        opacity: 1;
+        transition: visibility 0s linear 0s, opacity 500ms;
       }
     }
   }
@@ -281,20 +299,6 @@ body {
       transform: translate(-50%, -50%);
       width: 2em;
       z-index: -1;
-    }
-  }
-}
-
-.tv-registrationForm {
-  h5 {
-    margin-bottom: 0;
-  }
-
-  .@{ant-prefix}-input-affix-wrapper {
-    border-radius: 0.334rem;
-
-    > input.@{ant-prefix}-input {
-      text-transform: uppercase;
     }
   }
 }
@@ -382,7 +386,7 @@ body {
 .tv-awardsBanner {
   align-items: center;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
 
   &__text {
     color: @white;
