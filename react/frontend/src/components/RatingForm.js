@@ -9,31 +9,53 @@ export default function RatingForm() {
   // variables
   const [form] = Form.useForm();
   const { app, ballot } = useContext(AppContext);
+  const labels = [
+    {
+      cancel: 'Nein',
+      ok: 'Ja',
+    },
+    {
+      cancel: 'Nej',
+      ok: 'Já',
+    },
+    {
+      cancel: 'No',
+      ok: 'Sì',
+    },
+    {
+      cancel: 'No',
+      ok: 'Sí',
+    },
+    {
+      cancel: 'Non',
+      ok: 'Oui',
+    },
+    {
+      cancel: 'Piss Off',
+      ok: 'Deffo',
+    },
+  ];
   const socket = useContext(SocketContext);
-  const textCancel = ['Ne', 'Nein', 'Nej', 'Ni', 'No', 'Non'];
-  const textOK = ['Ano', 'Da', 'Ja', 'Oui', 'Sì', 'Tak'];
 
   // functions
   const ballotConfirm = (values) => {
-    var total = 0;
+    var sumValues = 0;
+    var text = labels[Math.floor(Math.random() * labels.length)];
 
     for (var cat_key in values) {
-      total += values[cat_key];
+      sumValues += values[cat_key];
     }
 
-    if (total > 0) {
+    if (sumValues > 0) {
       ballotSubmit(values);
     } else {
       Modal.confirm({
-        cancelText: textRandom(textCancel),
-        okText: `${textRandom(textOK)}, this sucks!`,
-        title: 'Nul points?',
+        cancelText: text.cancel,
+        okText: text.ok,
         onOk() {
           ballotSubmit(values);
         },
-        onCancel() {
-          console.log('[Client] Cancelled nul points:', ballot.contestant.key);
-        },
+        title: 'Nul points?',
       });
     }
   }
@@ -43,10 +65,6 @@ export default function RatingForm() {
 
     console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
   };
-
-  const textRandom = (arr) => {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
 
   useEffect(() => {
     socket.on('appBallot', form.resetFields);
