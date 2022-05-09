@@ -94,7 +94,7 @@ const contestants = [
     artist: 'Alvan & Ahez',
     country: 'France',
     key: 'fr',
-    representative: '',
+    representative: 'Melanie & Phillip',
     title: 'Fulenn',
   },
   {
@@ -108,7 +108,7 @@ const contestants = [
     artist: 'Malik Harris',
     country: 'Germany',
     key: 'de',
-    representative: '',
+    representative: 'Dan & Zach',
     title: 'Rockstars',
   },
   {
@@ -143,7 +143,7 @@ const contestants = [
     artist: 'Mahmood & BLANCO',
     country: 'Italy',
     key: 'it',
-    representative: '',
+    representative: 'Marty & Pip',
     title: 'Brividi',
   },
   {
@@ -241,7 +241,7 @@ const contestants = [
     artist: 'Chanel',
     country: 'Spain',
     key: 'es',
-    representative: '',
+    representative: 'Christian & Sarah',
     title: 'SloMo',
   },
   {
@@ -269,7 +269,7 @@ const contestants = [
     artist: 'Sam Ryder',
     country: 'United Kingdom',
     key: 'gb',
-    representative: '',
+    representative: 'Dwight & Molly',
     title: 'SPACE MAN',
   },
 ];
