@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from "react-router-dom";
-import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 
 import Awards from './routes/Awards';
 import Client from './routes/Client';
@@ -9,15 +8,14 @@ import reportWebVitals from './reportWebVitals';
 
 import './App.less';
 
-ReactDOM.render(
+createRoot(document.getElementById('root')).render(
   <BrowserRouter>
     <Routes>
       <Route element={<Client />} path="/" />
       <Route element={<Awards />} path="/awards" />
       <Route element={<Host />} path="/host" />
     </Routes>
-  </BrowserRouter>,
-  document.getElementById('root')
+  </BrowserRouter>
 );
 
 /**
