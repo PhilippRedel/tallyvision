@@ -18,13 +18,21 @@ export default function AwardsTable({ dataSource, total }) {
     {
       align: 'left',
       dataIndex: 'code',
-      key: 'code',
       render: (value, record) => (
         <span className="tv-txt--hidden">
           <ContestantDetails contestant={record} />
         </span>
       ),
       title: 'Contestant',
+    },
+    {
+      align: 'left',
+      className: 'tv-col--min tv-col--nowrap',
+      dataIndex: 'representative',
+      render: (value) => (
+        <span className="tv-txt--hidden">{value}</span>
+      ),
+      title: 'Representative',
     },
     ...(total ? [
       {
