@@ -345,11 +345,11 @@ function dbInsertVote(socket, scores) {
 // promise wrapper for database "all" queries
 function dbPromiseAll(query, params) {
   return new Promise((resolve, reject) => {
-    db.all(query, params, (error, rows) => {
-      if (error) {
-        reject(error);
+    db.all(query, params, (err, rows) => {
+      if (err) {
+        reject(err);
 
-        console.log('[DB] Error performing all query:', error);
+        console.log('[DB] Error performing all query:', err);
       } else {
         resolve(rows);
       }
@@ -360,11 +360,11 @@ function dbPromiseAll(query, params) {
 // promise wrapper for database "run" queries
 function dbPromiseRun(query, params) {
   return new Promise((resolve, reject) => {
-    db.run(query, params, (error) => {
-      if (error) {
-        reject(error);
+    db.run(query, params, (err) => {
+      if (err) {
+        reject(err);
         
-        console.log('[DB] Error performing run query:', error);
+        console.log('[DB] Error performing run query:', err);
       } else {
         resolve();
       }
