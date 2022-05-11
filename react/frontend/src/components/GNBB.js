@@ -1,14 +1,14 @@
 import { Button, Form } from 'antd';
 import { useContext } from 'react';
 
-import { AppContext } from '../context/AppContext';
-import { SocketContext } from '../context/SocketContext';
+import { AppContext } from '../context/App';
+import { SocketContext } from '../context/Socket';
 
 export default function GNBB() {
 
   // variables
   const { ballot } = useContext(AppContext);
-  const socket = useContext(SocketContext);
+  const { socket } = useContext(SocketContext);
 
   // functions
   const clickGNBB = () => {
@@ -19,8 +19,8 @@ export default function GNBB() {
 
   return (
     <Form
-      className="tv-GNBB"
-      name="tv_GNBB"
+      className="tv-gnbb"
+      name="form_gnbb"
       onFinish={clickGNBB}
     >
       <Button

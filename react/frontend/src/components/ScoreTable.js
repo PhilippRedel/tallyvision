@@ -1,10 +1,12 @@
 import { Table } from 'antd';
+import { useContext } from 'react';
 
+import { AppContext } from '../context/App';
 import BallotSwitch from './BallotSwitch';
-import ContestantDetails from './ContestantDetails';
-import RatingSummary from './RatingSummary';
+import ContestantHeading from './ContestantHeading';
+import ScoreSummary from './ScoreSummary';
 
-export default function ScoreTable({ categories, dataSource, host }) {
+export default function ScoreTable({ host }) {
 
   // variables
   const columns = [
@@ -13,7 +15,7 @@ export default function ScoreTable({ categories, dataSource, host }) {
       dataIndex: 'code',
       key: 'code',
       render: (value, record) => (
-        <ContestantDetails contestant={record} />
+        <ContestantHeading contestant={record} />
       ),
       showSorterTooltip: false,
       sorter: (a, b) => a.country.localeCompare(b.country),
@@ -55,22 +57,21 @@ export default function ScoreTable({ categories, dataSource, host }) {
       },
     ]),
   ];
+  const { scores } = useContext(AppContext);
 
-  // component
   return (
     <Table
       bordered={false}
-      className="tv-scoreTable"
+      className="tv-table tv-table--score"
       columns={columns}
-      dataSource={dataSource}
+      dataSource={scores}
       expandable={host
         ? false
         : {
           expandedRowRender: (record) => (
-            <RatingSummary values={record} xs={12} />
+            <ScoreSummary values={record} />
           ),
           expandRowByClick: true,
-          expandedRowClassName: () => 'debug',
           rowExpandable: (record) => record.total !== undefined,
           showExpandColumn: false,
         }}

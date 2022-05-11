@@ -1,25 +1,24 @@
 import { Card } from 'antd';
 import { useContext } from 'react';
 
-import { AppContext } from '../context/AppContext';
-import ContestantDetails from './ContestantDetails';
+import { AppContext } from '../context/App';
+import BallotForm from './BallotForm';
+import ContestantHeading from './ContestantHeading';
 import GNBB from './GNBB';
-import RatingForm from './RatingForm';
-import RatingSummary from './RatingSummary';
+import ScoreSummary from './ScoreSummary';
 
 export default function Ballot() {
 
   // variables
   const { ballot, ballotScore } = useContext(AppContext);
 
-  // component
   return (
-    <div className="tv-clientBallot">
+    <div className="tv-ballot">
       <Card bordered={false}>
-        <ContestantDetails contestant={ballot.contestant} />
+        <ContestantHeading contestant={ballot.contestant} />
         {ballotScore.uid
-          ? <RatingSummary values={ballotScore} />
-          : <RatingForm />
+          ? <ScoreSummary values={ballotScore} />
+          : <BallotForm />
         }
       </Card>
       <GNBB />

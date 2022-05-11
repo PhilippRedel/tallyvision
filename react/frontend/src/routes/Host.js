@@ -1,28 +1,13 @@
-import { Breadcrumb, Button, Card, Collapse, Layout, Tabs } from 'antd';
-import {
-  ControlOutlined, StarOutlined, TrophyOutlined, UserOutlined
-} from '@ant-design/icons';
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
-import { AppContext } from '../context/AppContext';
-import { ioHost, SocketContext } from '../context/SocketContext';
-import AuthForm from '../components/AuthForm';
-import Container from '../components/Container';
-import ContestantDetails from '../components/ContestantDetails';
-import ScoreTable from '../components/ScoreTable';
-import SiderClientsTable from '../components/SiderClientsTable';
-import SiderHeading from '../components/SiderHeading';
+import { AppContext } from '../context/App';
+import { HostIO, SocketContext } from '../context/Socket';
+import HostTabs from '../components/HostTabs';
 
 export default function Host() {
 
   // variables
-  const { Content, Footer, Sider } = Layout;
-  const { Panel } = Collapse;
-  const { TabPane } = Tabs;
-
-  // states
   const [app, setApp] = useState({
-    categories: [],
     db: '',
     version: '',
   });
@@ -30,129 +15,66 @@ export default function Host() {
     contestant: {},
     open: false,
   });
+  const [categories, setCategories] = useState([]);
   const [clients, setClients] = useState([]);
+  const [connected, setConnected] = useState(false);
   const [scores, setScores] = useState([]);
-  const [view, setView] = useState('tab_auth');
-
-  // functions
-  const calculateAwards = () => {
-    ioHost.emit('hostAwardsCalculate');
-  }
 
   useEffect(() => {
-    ioHost.on('appBallot', setBallot);
+    HostIO.on('appBallot', (data) => {
+      setBallot(data);
+      
+      console.log('[App] Ballot:', data);
+    });
 
-    ioHost.on('appClients', setClients);
+    HostIO.on('appClients', (data) => {
+      setClients(data);
+      
+      console.log('[App] Clients:', data);
+    });
 
-    ioHost.on('appConnected', (data) => {
-      setApp(data);
-      setView('tab_control');
-
+    HostIO.on('appConnected', (data) => {
+      setApp({
+        db: data.db,
+        version: data.version,
+      });
+      setCategories(data.categories);
+      
       console.log('[App] Connected as host:', data);
     });
 
-    ioHost.on('appScores', setScores);
+    HostIO.on('appScores', (data) => {
+      setScores(data);
+      
+      console.log('[App] Scores:', data);
+    });
 
-    return () => ioHost.disconnect();
+    HostIO.on('connect', () => {
+      setConnected(HostIO.connected);      
+    });
+
+    HostIO.on('disconnect', () => {
+      setConnected(HostIO.connected);
+    });
+
+    return () => HostIO.disconnect();
   }, []);
 
   return (
-    <Container viewport="desktop">
-      <SocketContext.Provider value={ioHost}>
-        <AppContext.Provider value={{ app: app, ballot: ballot }}>
-          <Tabs
-            activeKey={view}
-            animated
-            centered
-            className="tv-navTabs"
-            onTabClick={setView}
-          >
-            <TabPane
-              disabled={ioHost.connected}
-              key="tab_auth"
-              tab="HOST"
-            >
-              <Container className="tv-container--nopad" viewport="mobile">
-                <Card bordered={false}>
-                  <AuthForm />
-                </Card>
-              </Container>
-            </TabPane>
-            {ioHost.connected &&
-              <TabPane
-                disabled={!ioHost.connected}
-                key="tab_control"
-                tab={<ControlOutlined />}
-              >
-                <Layout className="tv-hostLayout__outer">
-                  <Sider className="tv-hostLayout__sider" width={240}>
-                    <Collapse
-                      defaultActiveKey={['panel_clients', 'panel_ballot']}
-                      expandIconPosition="right"
-                      ghost
-                    >
-                      <Panel
-                        header={
-                          <SiderHeading
-                            count={clients.length}
-                            icon={<UserOutlined />}
-                            title="Clients"
-                          />
-                        }
-                        key="panel_clients"
-                      >
-                        <SiderClientsTable dataSource={clients} />
-                      </Panel>
-                      <Panel
-                        header={
-                          <SiderHeading
-                            count={ballot.open ? 'Open' : 'Closed'}
-                            icon={<StarOutlined />}
-                            title="Ballot"
-                          />
-                        }
-                        key="panel_ballot"
-                      >
-                        <ContestantDetails contestant={ballot.contestant} />
-                      </Panel>
-                      <Panel
-                        header={
-                          <SiderHeading
-                            icon={<TrophyOutlined />}
-                            title="Awards"
-                          />
-                        }
-                        key="panel_awards"
-                      >
-                        <Button
-                          block
-                          ghost
-                          onClick={calculateAwards}
-                          type="primary"
-                        >
-                          Calculate
-                        </Button>
-                      </Panel>
-                    </Collapse>
-                  </Sider>
-                  <Layout className="tv-hostLayout__inner">
-                    <Content className="tv-hostLayout__content">
-                      <Breadcrumb>
-                        <Breadcrumb.Item>DB</Breadcrumb.Item>
-                        <Breadcrumb.Item>{app.db}</Breadcrumb.Item>
-                      </Breadcrumb>
-                      <ScoreTable dataSource={scores} host />
-                      <Footer className="tv-hostLayout__footer">
-                        Version <span className="ver">{app.version}</span>
-                      </Footer>
-                    </Content>
-                  </Layout>
-                </Layout>
-              </TabPane>
-            }
-          </Tabs>
-        </AppContext.Provider>
-      </SocketContext.Provider>
-    </Container>
-  );
+    <SocketContext.Provider value={{
+      connected: connected,
+      socket: HostIO,
+    }}>
+      <AppContext.Provider value={{
+        ballot: ballot,
+        categories: categories,
+        db: app.db,
+        clients: clients,
+        scores: scores,
+        version: app.version,
+      }}>
+        <HostTabs />
+      </AppContext.Provider>
+    </SocketContext.Provider>
+  )
 }
