@@ -7,7 +7,7 @@ import { SocketContext } from '../context/Socket';
 export default function BallotForm() {
 
   // variables
-  const { ballot, categories } = useContext(AppContext);
+  const { ballot, ballotScore, categories } = useContext(AppContext);
   const { socket } = useContext(SocketContext);
   const labels = [
     {
@@ -76,6 +76,7 @@ export default function BallotForm() {
     <Form
       className="tv-form tv-form--ballot"
       form={form}
+      initialValues={ballotScore}
       name="form_ballot"
       onFinish={ballotConfirm}
     >
@@ -85,7 +86,6 @@ export default function BallotForm() {
             {category.label}
           </Divider>
           <Form.Item
-            initialValue={0}
             name={`cat_${category.key}`}
             required
           >

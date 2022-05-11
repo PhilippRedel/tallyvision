@@ -230,23 +230,6 @@ function clientFind(socket) {
 }
 
 /**
- * get contestant data from key
- */
-function contestantFind(key) {
-  var found = data.contestants.find((contestant) => {
-    return contestant.key === key;
-  });
-
-  return new Promise((resolve, reject) => {
-    if (found) {
-      resolve(found);
-    } else {
-      reject();
-    }
-  });
-}
-
-/**
  * create database tables
  */
 function dbCreateTables() {
@@ -304,33 +287,50 @@ function dbInsertGNBP(socket) {
 /**
  * insert vote record
  */
-function dbInsertVote(socket, scores) {
+async function dbInsertVote(socket, scores) {
   var cat_columns, cat_placeholders, query, total = 0, values;
 
-  // todo: add check to see if client already submitted ballot
+  await dbQueryClient(socket, ballot.contestant).then((rows) => {
+    if (rows.length > 0) {
+      cat_columns = data.categories.map((category) => {
+        return `cat_${category.key}=${scores[`cat_${category.key}`]}`;
+      }).join(`,`);
+  
+      query  = `UPDATE votes SET ${cat_columns},`;
+      query += `total=? WHERE client_name=? AND contestant_key=?`;
+      
+      values = [socket.name, ballot.contestant.key];
 
-  cat_columns = data.categories.map((category) => {
-    return `cat_${category.key}`;
-  }).join(`,`);
-
-  cat_placeholders = data.categories.map(() => {
-    return `?`;
-  }).join(`,`);
-
-  query  = `INSERT INTO votes (`;
-  query += `client_name,`;
-  query += `contestant_key,`;
-  query += `${cat_columns},`;
-  query += `total) VALUES (?,?,${cat_placeholders},?);`;
-
-  values = [socket.name, ballot.contestant.key];
-  values = values.concat(Object.values(scores));
-
-  for (var cat_key in scores) {
-    total += scores[cat_key];
-  }
-
-  values.push(total);
+      for (var cat_key in scores) {
+        total += scores[cat_key];
+      }
+  
+      values.unshift(total);
+    } else {
+      cat_columns = data.categories.map((category) => {
+        return `cat_${category.key}`;
+      }).join(`,`);
+    
+      cat_placeholders = data.categories.map(() => {
+        return `?`;
+      }).join(`,`);
+  
+      query  = `INSERT INTO votes (`;
+      query += `client_name,`;
+      query += `contestant_key,`;
+      query += `${cat_columns},`;
+      query += `total) VALUES (?,?,${cat_placeholders},?);`;
+  
+      values = [socket.name, ballot.contestant.key];
+      values = values.concat(Object.values(scores));
+  
+      for (var cat_key in scores) {
+        total += scores[cat_key];
+      }
+  
+      values.push(total);
+    }
+  });
 
   dbWrapperRun(query, values).then(() => {
     appGetObject(clients, 'name', socket).then((client) => {
