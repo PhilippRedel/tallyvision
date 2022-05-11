@@ -6,7 +6,7 @@ import Client from './routes/Client';
 import Host from './routes/Host';
 import reportWebVitals from './reportWebVitals';
 
-import './App.less';
+import './index.less';
 
 createRoot(document.getElementById('root')).render(
   <BrowserRouter>
@@ -18,9 +18,7 @@ createRoot(document.getElementById('root')).render(
   </BrowserRouter>
 );
 
-/**
- * If you want to start measuring performance in your app, pass a function
- * to log results (for example: reportWebVitals(console.log))
- * or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
- */
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
 reportWebVitals();
