@@ -74,6 +74,16 @@ clientIO.use((socket, next) => {
 clientIO.on('connection', (socket) => {
   clientConnection(socket);
 
+  socket.on('clientBallotEdit', () => {
+    appGetObject(clients, 'name', socket).then((client) => {
+      client.voted = false;
+
+      console.log('[IO] Client editing ballot:', socket.name);
+    }).then(() => {
+      hostClients();
+    });
+  });
+
   socket.on('clientBallotSubmit', (scores) => {
     dbInsertVote(socket, scores);
 

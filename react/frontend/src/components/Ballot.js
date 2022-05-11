@@ -2,6 +2,7 @@ import { Button, Card } from 'antd';
 import { useContext, useEffect, useState } from 'react';
 
 import { AppContext } from '../context/App';
+import { SocketContext } from '../context/Socket';
 import BallotForm from './BallotForm';
 import ContestantHeading from './ContestantHeading';
 import GNBB from './GNBB';
@@ -10,12 +11,15 @@ import ScoreSummary from './ScoreSummary';
 export default function Ballot() {
 
   // variables
-  const { ballot, ballotScore } = useContext(AppContext);
   const [voted, setVoted] = useState(false);
+  const { ballot, ballotScore } = useContext(AppContext);
+  const { socket } = useContext(SocketContext);
 
   // functions
   const ballotEdit = () => {
-    setVoted(false)
+    setVoted(false);
+
+    socket.emit('clientBallotEdit');
   }
 
   useEffect(() => {
