@@ -1,12 +1,37 @@
+const { createServer } = require('http');
+const { Database } = require('sqlite3');
+const { Server } = require('socket.io');
 const cookieParser = require('cookie-parser');
-const createError = require('http-errors');
 const express = require('express');
 const logger = require('morgan');
 const path = require('path');
-const sqlite3 = require('sqlite3');
 
-// database
-const db = new sqlite3.Database(dbFilename(), (err) => {
+const app = express();
+const httpServer = createServer(app);
+
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.urlencoded({ extended: false }));
+app.use(logger('dev'));
+
+const apiRouter = require('./routes/api');
+const publicRouter = require('./routes/public');
+
+app.use('/', publicRouter);
+app.use('/api', apiRouter);
+
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+  },
+  pingInterval: 2500,
+});
+const awardsIO = io.of('/awards');
+const clientIO = io.of('/client');
+const hostIO = io.of('/host');
+
+const db = new Database(dbSetFilename(), (err) => {
   if (err) {
     console.log('[DB] Error creating database:', err);
   } else {
@@ -14,57 +39,27 @@ const db = new sqlite3.Database(dbFilename(), (err) => {
   }
 });
 
-// routers
-const router = require('./routes/api');
+// data
+const data = {
+  categories: require('./data/categories'),
+  contestants: require('./data/contestants/2022'),
+  version: process.env.npm_package_version,
+};
 
-// server
-const app = express();
-const server = require('http').createServer(app);
+// variables
+var ballot = appSetBallot();
+var clients = [];
+var hostPin = appSetHostPin();
 
-// socket.io 
-const io = require('socket.io')(server, {
-  cors: {
-    origin: ['http://localhost:3000', 'http://192.168.10.170:3000'],
-    methods: ['GET', 'POST'],
-  }
-});
-const ioAwards = io.of('/awards');
-const ioClient = io.of('/client');
-const ioHost = io.of('/host');
-
-app.use('/', router);
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-app.use(express.urlencoded({ extended: false }));
-app.use(logger('dev'));
-
-// catch 404 and forward to error handler
-app.use((req, res, next) => {
-  next(createError(404));
+awardsIO.on('connection', (socket) => {
+  awardsIO.emit('appConnected', {
+    categories: data.categories,
+  }, () => {
+    console.log('[IO] Awards connected:', socket.id);
+  });
 });
 
-// error handler
-app.use((err, req, res, next) => {
-  res.locals.status = err.status || 500;
-
-  res.send({
-    status: res.locals.status,
-    message: err.message,
-  }).status(res.locals.status);
-});
-
-// app data
-const appCategories = require('./data/categories');
-const appContestants = require('./data/contestants/2022');
-const appVersion = process.env.npm_package_version;
-
-// app variables
-var appBallot = appBallotDefault();
-var appClients = [];
-var appHostPin = appHostPinGenerate();
-
-ioClient.use((socket, next) => {
+clientIO.use((socket, next) => {
   var auth = socket.handshake.auth;
 
   if (auth.name) {
@@ -76,18 +71,8 @@ ioClient.use((socket, next) => {
   }
 });
 
-ioAwards.on('connection', (socket) => {
-  ioAwards.emit('appConnected', {
-    categories: appCategories,
-    db: dbFilename(),
-    version: appVersion,
-  }, () => {
-    console.log('[IO] Awards connected:', socket.id);
-  });
-});
-
-ioClient.on('connection', (socket) => {
-  ioClientConnect(socket);
+clientIO.on('connection', (socket) => {
+  clientConnection(socket);
 
   socket.on('clientBallotSubmit', (scores) => {
     dbInsertVote(socket, scores);
@@ -102,48 +87,46 @@ ioClient.on('connection', (socket) => {
   });
 
   socket.on('disconnect', (reason) => {
-    appClientFind(socket).then((client) => {
+    appGetObject(clients, 'name', socket).then((client) => {
       client.connected = socket.connected;
 
       console.log('[IO] Client disconnected:', [socket.name, reason]);
     }).then(() => {
-      ioHostClients();
+      hostClients();
     });
   });
 });
 
-ioHost.use((socket, next) => {
+hostIO.use((socket, next) => {
   var auth = socket.handshake.auth;
 
-  if (auth.pin === appHostPin) {  
-    console.log('AUTH');
-
+  if (auth.pin === hostPin) {  
     next();
   } else {
-    next(new Error('incorrect host pin'));
+    next(new Error('pin incorrect'));
   }
 });
 
-ioHost.on('connection', (socket) => {
-  ioHostConnect(socket);
+hostIO.on('connection', (socket) => {
+  hostConnection(socket);
 
   socket.on('hostAwardsCalculate', () => {
-    ioAwardsCategory();
-    ioAwardsGNBP();
-    ioAwardsTotal();
+    awardsCategory();
+    awardsGNBP();
+    awardsTotal();
   });
 
   socket.on('hostBallotClose', () => {
-    if (appBallot.open) {
-      appBallot = appBallotDefault();
+    if (ballot.open) {
+      ballot = appSetBallot();
 
-      appClients.map((client) => { 
+      clients.map((client) => { 
         client.voted = false;
       });
 
-      ioClientBallot();
-      ioHostBallot();
-      ioHostClients();
+      clientBallot();
+      hostBallot();
+      hostClients();
 
       console.log('[IO] Host closed ballot');
     } else {
@@ -151,46 +134,42 @@ ioHost.on('connection', (socket) => {
     }
   });
 
-  socket.on('hostBallotOpen', (key) => {
-    appContestantFind(key).then((contestant) => {
-      appBallot.contestant = contestant;
-      appBallot.open = true;
+  socket.on('hostBallotOpen', (contestant) => {
+    appGetObject(data.contestants, 'key', contestant).then((contestant) => {
+      ballot.contestant = contestant;
+      ballot.open = true;
 
-      console.log('[IO] Host opened ballot:', appBallot.contestant);
+      console.log('[IO] Host opened ballot:', ballot.contestant);
     }, () => {
       console.log('[IO] Error contestant not found');
     }).then(async () => {
-      for (var client of appClients) {        
-        await dbQueryClient(client, appBallot.contestant).then((rows) => {
+      for (var client of clients) {        
+        await dbQueryClient(client, ballot.contestant).then((rows) => {
           client.voted = rows.length > 0;
         });
       }
 
-      ioClientBallot();
-      ioHostBallot();
-      ioHostClients();
+      clientBallot();
+      hostBallot();
+      hostClients();
     });
   });
 });
 
-// initialize app
+/**
+ * initialize app
+ */
 function __initialize() {
-  console.log('[TV] Version:', appVersion);
-  console.log('[TV] Host access pin:', appHostPin);
+  console.log('[TV] Version:', data.version);
+  console.log('[TV] Host access pin:', hostPin);
 }
 
-// set default ballot values
-function appBallotDefault() {
-  return {
-    contestant: {},
-    open: false,
-  };
-}
-
-// find registered client
-function appClientFind(socket) {
-  var found = appClients.find((client) => {
-    return client.name === socket.name;
+/**
+ * get object with key from array
+ */
+ function appGetObject(arr, key, obj1) {
+  var found = arr.find((obj2) => {
+    return obj2[key] === obj1[key];
   });
 
   return new Promise((resolve, reject) => {
@@ -202,28 +181,10 @@ function appClientFind(socket) {
   });
 }
 
-// find contestant
-function appContestantFind(key) {
-  var found = appContestants.find((contestant) => {
-    return contestant.key === key;
-  });
-
-  return new Promise((resolve, reject) => {
-    if (found) {
-      resolve(found);
-    } else {
-      reject();
-    }
-  });
-}
-
-// generate host pin
-function appHostPinGenerate() {
-  return Math.floor(1000 + Math.random() * 9000);
-}
-
-// set score table data from two arrays
-function appScoreTable(arr1, arr2, key1, key2) {
+/**
+ * get formatted score data
+ */
+ function appGetScores(arr1, arr2, key1, key2) {
   for (var obj1 of arr1) {
     var found = arr2.find((obj2) => {
       return obj2[key2] === obj1[key1];
@@ -237,7 +198,57 @@ function appScoreTable(arr1, arr2, key1, key2) {
   return arr1;
 }
 
-// create database tables
+/**
+ * set default ballot data
+ */
+function appSetBallot() {
+  return { contestant: {}, open: false };
+}
+
+/**
+ * set host access pin
+ */
+ function appSetHostPin() {
+  return Math.floor(Math.random() * 9000 + 1000);
+}
+
+/**
+ * get client data from socket
+ */
+function clientFind(socket) {
+  var found = clients.find((client) => {
+    return client.name === socket.name;
+  });
+
+  return new Promise((resolve, reject) => {
+    if (found) {
+      resolve(found);
+    } else {
+      reject();
+    }
+  });
+}
+
+/**
+ * get contestant data from key
+ */
+function contestantFind(key) {
+  var found = data.contestants.find((contestant) => {
+    return contestant.key === key;
+  });
+
+  return new Promise((resolve, reject) => {
+    if (found) {
+      resolve(found);
+    } else {
+      reject();
+    }
+  });
+}
+
+/**
+ * create database tables
+ */
 function dbCreateTables() {
   var columns, gnbp, votes;
 
@@ -256,7 +267,7 @@ function dbCreateTables() {
   });
 
   // votes table
-  columns = appCategories.map((category) => {
+  columns = data.categories.map((category) => {
     return `cat_${category.key} INTEGER NOT NULL`;
   }).join(`,`);
 
@@ -276,34 +287,33 @@ function dbCreateTables() {
   });
 }
 
-// set database filename
-function dbFilename() {
-  return `${new Date().toISOString().substring(0, 10)}.db`;
-}
-
-// insert Graham Norton bitch point record for client and contestant
+/**
+ * insert Graham Norton bitch point record
+ */
 function dbInsertGNBP(socket) {
   var query = `INSERT INTO gnbp (client_name,contestant_key) VALUES (?,?)`;
-  var values = [socket.name, appBallot.contestant.key];
+  var values = [socket.name, ballot.contestant.key];
 
-  dbPromiseRun(query, values).then(() => {
+  dbWrapperRun(query, values).then(() => {
     socket.emit('appGNBP', values);
 
     console.log('[DB] Client GNBP tallied:', values);
   });
 }
 
-// insert vote record for client and contestant
+/**
+ * insert vote record
+ */
 function dbInsertVote(socket, scores) {
   var cat_columns, cat_placeholders, query, total = 0, values;
 
   // todo: add check to see if client already submitted ballot
 
-  cat_columns = appCategories.map((category) => {
+  cat_columns = data.categories.map((category) => {
     return `cat_${category.key}`;
   }).join(`,`);
 
-  cat_placeholders = appCategories.map(() => {
+  cat_placeholders = data.categories.map(() => {
     return `?`;
   }).join(`,`);
 
@@ -313,7 +323,7 @@ function dbInsertVote(socket, scores) {
   query += `${cat_columns},`;
   query += `total) VALUES (?,?,${cat_placeholders},?);`;
 
-  values = [socket.name, appBallot.contestant.key];
+  values = [socket.name, ballot.contestant.key];
   values = values.concat(Object.values(scores));
 
   for (var cat_key in scores) {
@@ -322,12 +332,12 @@ function dbInsertVote(socket, scores) {
 
   values.push(total);
 
-  dbPromiseRun(query, values).then(() => {
-    appClientFind(socket).then((client) => {
+  dbWrapperRun(query, values).then(() => {
+    appGetObject(clients, 'name', socket).then((client) => {
       client.voted = true;
     });
 
-    dbQueryClient(socket, appBallot.contestant).then((rows) => {
+    dbQueryClient(socket, ballot.contestant).then((rows) => {
       if (rows.length > 0) {
         socket.emit('appBallotScore', rows[0]);
       }
@@ -335,15 +345,85 @@ function dbInsertVote(socket, scores) {
 
     console.log('[DB] Client ballot tallied:', values);
   }).then(() => {
-    ioClientScores(socket);
+    clientScores(socket);
   }).then(() => {
-    ioHostClients();
-    ioHostScores();
+    hostClients();
+    hostScores();
   });
 }
 
-// promise wrapper for database "all" queries
-function dbPromiseAll(query, params) {
+/**
+ * query category score for all contestants
+ */
+function dbQueryCategory(category) {
+  var query;
+  
+  query  = `SELECT contestant_key,`;
+  query += `COUNT(client_name) votes,`;
+  query += `SUM(cat_${category.key}) score FROM votes GROUP BY contestant_key ORDER BY score DESC;`;
+
+  return dbWrapperAll(query);
+}
+
+/**
+ * query score(s) for client
+ */
+function dbQueryClient(socket, contestant = undefined) {
+  var params, query;
+  
+  query = `SELECT * FROM votes WHERE client_name=?`;
+
+  if (contestant) {
+    params = [socket.name, contestant.key];
+    query += ` AND contestant_key=?`;
+  } else {
+    params = socket.name;
+  }
+
+  return dbWrapperAll(query, params);
+}
+
+/**
+ * query Graham Norton bitch score for all contestants
+ */
+function dbQueryGNBP() {
+  var query;
+  
+  query  = `SELECT contestant_key,`;
+  query += `COUNT(client_name) score FROM gnbp GROUP BY contestant_key ORDER BY score DESC;`;
+
+  return dbWrapperAll(query);
+}
+
+/**
+ * query total score for all contestants
+ */
+function dbQueryTotal() {
+  var cat_columns, query;
+
+  cat_columns = data.categories.map((category) => {
+    return `SUM(cat_${category.key}) cat_${category.key}`;
+  }).join(`,`);
+  
+  query  = `SELECT contestant_key,`;
+  query += `COUNT(client_name) votes,`;
+  query += `${cat_columns},`;
+  query += `SUM(total) total FROM votes GROUP BY contestant_key ORDER BY total DESC;`;
+
+  return dbWrapperAll(query);
+}
+
+/**
+ * set filename for database
+ */
+ function dbSetFilename() {
+  return `${new Date().toISOString().substring(0, 10)}.db`;
+}
+
+/**
+ * promise wrapper for database <all> queries
+ */
+function dbWrapperAll(query, params) {
   return new Promise((resolve, reject) => {
     db.all(query, params, (err, rows) => {
       if (err) {
@@ -357,8 +437,10 @@ function dbPromiseAll(query, params) {
   });
 }
 
-// promise wrapper for database "run" queries
-function dbPromiseRun(query, params) {
+/**
+ * promise wrapper for database <all> queries
+ */
+function dbWrapperRun(query, params) {
   return new Promise((resolve, reject) => {
     db.run(query, params, (err) => {
       if (err) {
@@ -372,92 +454,47 @@ function dbPromiseRun(query, params) {
   });
 }
 
-// get category score data for all contestants 
-function dbQueryCategory(category) {
-  var query;
-  
-  query  = `SELECT contestant_key,`;
-  query += `COUNT(client_name) votes,`;
-  query += `SUM(cat_${category.key}) score FROM votes GROUP BY contestant_key ORDER BY score DESC;`;
-
-  return dbPromiseAll(query);
-}
-
-// get score data for client
-function dbQueryClient(socket, contestant = undefined) {
-  var params, query;
-  
-  query = `SELECT * FROM votes WHERE client_name=?`;
-
-  if (contestant) {
-    params = [socket.name, contestant.key];
-    query += ` AND contestant_key=?`;
-  } else {
-    params = socket.name;
-  }
-
-  return dbPromiseAll(query, params);
-}
-
-// get Graham Norton bitch points for all contestants
-function dbQueryGNBP() {
-  var query;
-  
-  query  = `SELECT contestant_key,`;
-  query += `COUNT(client_name) score FROM gnbp GROUP BY contestant_key ORDER BY score DESC;`;
-
-  return dbPromiseAll(query);
-}
-
-// get total score data for all contestants
-function dbQueryTotal() {
-  var cat_columns, query;
-
-  cat_columns = appCategories.map((category) => {
-    return `SUM(cat_${category.key}) cat_${category.key}`;
-  }).join(`,`);
-  
-  query  = `SELECT contestant_key,`;
-  query += `COUNT(client_name) votes,`;
-  query += `${cat_columns},`;
-  query += `SUM(total) total FROM votes GROUP BY contestant_key ORDER BY total DESC;`;
-
-  return dbPromiseAll(query);
-}
-
-// send calculated category awards to host
-async function ioAwardsCategory() {
+/**
+ * emit top category scores to awards sockets
+ */
+async function awardsCategory() {
   var scores = {};
 
-  for (var category of appCategories) {
+  for (var category of data.categories) {
     await dbQueryCategory(category).then((rows) => {
-      scores[category.key] = appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key');
+      scores[category.key] = appGetScores(rows.slice(0, 3), data.contestants, 'contestant_key', 'key');
     });
   }
 
-  ioAwards.emit('appAwardsCategory', scores);
+  awardsIO.emit('appScoresCategory', scores);
 }
 
-// send calculated GNBP awards to host
-function ioAwardsGNBP() {
+/**
+ * emit top GNBP scores to awards sockets
+ */
+function awardsGNBP() {
   dbQueryGNBP().then((rows) => {
-    ioAwards.emit('appAwardsGNBP', appScoreTable(rows.slice(0, 3), appContestants, 'contestant_key', 'key'));
+    awardsIO.emit('appScoresGNBP', appGetScores(rows.slice(0, 3), data.contestants, 'contestant_key', 'key'));
   });
 }
 
-// send calculated total awards to host
-async function ioAwardsTotal() {
+/**
+ * emit total scores for all contestants to awards sockets
+ */
+function awardsTotal() {
   dbQueryTotal().then((rows) => {
-    ioAwards.emit('appAwardsTotal', appScoreTable(rows, appContestants, 'contestant_key', 'key'));
+    awardsIO.emit('appScoresTotal', appGetScores(rows, data.contestants, 'contestant_key', 'key'));
   });
 }
 
-// send ballot data to client(s)
-function ioClientBallot(socket = undefined) {
+/**
+ * emit ballot to client(s)
+ */
+function clientBallot(socket = undefined) {
   if (socket) {
-    socket.emit('appBallot', appBallot);
+    socket.emit('appBallot', ballot);
 
-    dbQueryClient(socket, appBallot.contestant).then((rows) => {
+    dbQueryClient(socket, ballot.contestant).then((rows) => {
       if (rows.length > 0) {
         socket.emit('appBallotScore', rows[0]);
       } else {
@@ -465,10 +502,10 @@ function ioClientBallot(socket = undefined) {
       }
     });
   } else {
-    ioClient.emit('appBallot', appBallot);
+    clientIO.emit('appBallot', ballot);
 
-    for (var [id, socket] of ioClient.sockets) {        
-      dbQueryClient(socket, appBallot.contestant).then((rows) => {
+    for (var [id, socket] of clientIO.sockets) {        
+      dbQueryClient(socket, ballot.contestant).then((rows) => {
         if (rows.length > 0) {
           socket.emit('appBallotScore', rows[0]);
         } else {
@@ -479,9 +516,11 @@ function ioClientBallot(socket = undefined) {
   }
 }
 
-// update list of clients and emit connection events
-function ioClientConnect(socket) {
-  appClientFind(socket).then((client) => {
+/**
+ * register client and emit connection events
+ */
+function clientConnection(socket) {
+  appGetObject(clients, 'name', socket).then((client) => {
     client.connected = socket.connected;
     client.voted = false;
 
@@ -493,83 +532,90 @@ function ioClientConnect(socket) {
       voted: false,
     };
 
-    appClients.push(client);
-    appClients.sort((a, b) => {
+    clients.push(client);
+    clients.sort((a, b) => {
       return (a.name > b.name) ? 1 : -1;
     });
 
     return client;
   }).then(async (client) => {
-    if (appBallot.open) {
-      await dbQueryClient(socket, appBallot.contestant).then((rows) => {
+    if (ballot.open) {
+      await dbQueryClient(socket, ballot.contestant).then((rows) => {
         client.voted = rows.length > 0;
       });
     }
 
     socket.emit('appConnected', {
-      categories: appCategories,
+      categories: data.categories,
       name: client.name,
     });
     
     console.log('[IO] Client connected:', client);
   }).then(() => {
-    ioClientBallot(socket);
-    ioClientScores(socket);
+    clientBallot(socket);
+    clientScores(socket);
   }).then(() => {
-    ioHostClients();
+    hostClients();
   });
 }
 
-// send contestant scores to client
-function ioClientScores(socket) {
-  var contestants = JSON.parse(JSON.stringify(appContestants));
+/**
+ * emit contestant scores to client
+ */
+function clientScores(socket) {
+  var contestants = JSON.parse(JSON.stringify(data.contestants));
 
   dbQueryClient(socket).then((rows) => {
-    return appScoreTable(contestants, rows, 'key', 'contestant_key');
+    return appGetScores(contestants, rows, 'key', 'contestant_key');
   }).then((scores) => {
     socket.emit('appScores', scores);
   });
 }
 
-// send ballot data to host
-function ioHostBallot() {
-  ioHost.emit('appBallot', appBallot);
+/**
+ * emit ballot to host
+ */
+function hostBallot() {
+  hostIO.emit('appBallot', ballot);
 }
 
-// send list of clients to host
-function ioHostClients() {
-  ioHost.emit('appClients', appClients);
+/**
+ * emit clients to host
+ */
+function hostClients() {
+  hostIO.emit('appClients', clients);
 }
 
-// send host app data and emit connection events
-function ioHostConnect(socket) {
-  ioHost.emit('appConnected', {
-    categories: appCategories,
-    db: dbFilename(),
-    version: appVersion,
+/**
+ * emit app details to host and emit connection events
+ */
+function hostConnection(socket) {
+  hostIO.emit('appConnected', {
+    categories: data.categories,
+    db: dbSetFilename(),
+    version: data.version,
   }, () => {
     console.log('[IO] Host connected:', socket.id);
   });
 
-  ioHostBallot();
-  ioHostClients();
-  ioHostScores();
+  hostBallot();
+  hostClients();
+  hostScores();
 }
 
-// send contestant scores to host
-function ioHostScores() {
-  var contestants = JSON.parse(JSON.stringify(appContestants));
+/**
+ * emit contestant scores to host
+ */
+function hostScores() {
+  var contestants = JSON.parse(JSON.stringify(data.contestants));
 
   dbQueryTotal().then((rows) => {
-    return appScoreTable(contestants, rows, 'key', 'contestant_key');
+    return appGetScores(contestants, rows, 'key', 'contestant_key');
   }).then((scores) => {
-    ioHost.emit('appScores', scores);
+    hostIO.emit('appScores', scores);
   });
 }
 
 __initialize();
 
-module.exports = {
-  app: app,
-  server: server,
-};
+module.exports = { app: app, server: httpServer };
