@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
 
-/* GET api */
+/* GET public index */
 router.get('/', function(req, res, next) {
-  res.send({ response: 'socket to me!' }).status(200);
+  res.render('index', { title: 'TALLYVISION' });
 });
 
 module.exports = router;
