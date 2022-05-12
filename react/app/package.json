@@ -1,6 +1,6 @@
 {
   "name": "tallyvision",
-  "version": "22.5.10",
+  "version": "22.5.12",
   "private": true,
   "scripts": {
     "start": "node ./bin/www"
