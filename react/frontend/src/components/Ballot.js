@@ -11,20 +11,22 @@ import ScoreSummary from './ScoreSummary';
 export default function Ballot() {
 
   // variables
-  const [voted, setVoted] = useState(false);
+  const [showBallot, setShowBallot] = useState(true);
   const { ballot, ballotScore } = useContext(AppContext);
   const { socket } = useContext(SocketContext);
 
   // functions
   const ballotEdit = () => {
-    setVoted(false);
+    setShowBallot(true);
 
     socket.emit('clientBallotEdit');
   }
 
   useEffect(() => {
     if (ballotScore.uid) {
-      setVoted(true);
+      setShowBallot(false);
+    } else {
+      setShowBallot(true);
     }
   }, [ballotScore]);
 
@@ -32,8 +34,9 @@ export default function Ballot() {
     <div className="tv-ballot">
       <Card bordered={false}>
         <ContestantHeading contestant={ballot.contestant} />
-        {voted
-          ? (
+        {showBallot
+          ? <BallotForm />
+          : (
             <>
               <ScoreSummary values={ballotScore} />
               <Button
@@ -46,7 +49,6 @@ export default function Ballot() {
               </Button>
             </>
           )
-          : <BallotForm />
         }
       </Card>
       <GNBB />
