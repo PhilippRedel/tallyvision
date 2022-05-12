@@ -1,11 +1,11 @@
 const contestants = [
-  {
+  /* {
     artist: 'Ronela Hajati',
     country: 'Albania',
     key: 'al',
     representative: '',
     title: 'Sekret',
-  },
+  }, */
   {
     artist: 'Rosa Linn',
     country: 'Armenia',
@@ -20,13 +20,13 @@ const contestants = [
     representative: '',
     title: 'Not the Same',
   },
-  {
+  /* {
     artist: 'LUM!X (Feat. Pia Maria)',
     country: 'Austria',
     key: 'at',
     representative: '',
     title: 'Halo',
-  },
+  }, */
   {
     artist: 'Nadir Rustamli',
     country: 'Azerbaijan',
@@ -41,20 +41,20 @@ const contestants = [
     representative: '',
     title: 'Miss You',
   },
-  {
+  /* {
     artist: 'Intelligent Music Project',
     country: 'Bulgaria',
     key: 'bg',
     representative: '',
     title: 'Intention',
-  },
-  {
+  }, */
+  /* {
     artist: 'Mia Dimšić',
     country: 'Croatia',
     key: 'hr',
     representative: '',
     title: 'Guilty Pleasure',
-  },
+  }, */
   {
     artist: 'Andromache',
     country: 'Cyprus',
@@ -69,13 +69,13 @@ const contestants = [
     representative: '',
     title: 'Lights Off',
   },
-  {
+  /* {
     artist: 'REDDI',
     country: 'Denmark',
     key: 'dk',
     representative: '',
     title: 'The Show',
-  },
+  }, */
   {
     artist: 'Stefan',
     country: 'Estonia',
@@ -146,13 +146,13 @@ const contestants = [
     representative: 'Marty & Pip',
     title: 'Brividi',
   },
-  {
+  /* {
     artist: 'Citi Zēni',
     country: 'Latvia',
     key: 'lv',
     representative: '',
     title: 'Eat Your Salad',
-  },
+  }, */
   {
     artist: 'Monika Liu',
     country: 'Lithuania',
@@ -230,13 +230,13 @@ const contestants = [
     representative: '',
     title: 'In Corpore Sano',
   },
-  {
+  /* {
     artist: 'LPS',
     country: 'Slovenia',
     key: 'si',
     representative: '',
     title: 'Disko',
-  },
+  }, */
   {
     artist: 'Chanel',
     country: 'Spain',
