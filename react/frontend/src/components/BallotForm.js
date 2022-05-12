@@ -65,7 +65,7 @@ export default function BallotForm() {
   const ballotSubmit = (values) => {
     socket.emit('clientBallotSubmit', values);
 
-    console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
+    // console.log('[Client] Submitted ballot:', [ballot.contestant.key, values]);
   };
 
   useEffect(() => {

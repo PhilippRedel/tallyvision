@@ -21,26 +21,26 @@ export default function Client() {
     ClientIO.on('appBallot', (data) => {
       setBallot(data);
       
-      console.log('[App] Ballot:', data);
+      // console.log('[App] Ballot:', data);
     });
 
     ClientIO.on('appBallotScore', (data) => {
       setBallotScore(data);
       
-      console.log('[App] Ballot score:', data);
+      // console.log('[App] Ballot score:', data);
     });
 
     ClientIO.on('appConnected', (data) => {
       setCategories(data.categories);
       setName(data.name);
       
-      console.log('[App] Connected as client:', data.name);
+      // console.log('[App] Connected as client:', data.name);
     });
 
     ClientIO.on('appScores', (data) => {
       setScores(data);
       
-      console.log('[App] Scores:', data);
+      // console.log('[App] Scores:', data);
     });
 
     ClientIO.on('connect', () => {
