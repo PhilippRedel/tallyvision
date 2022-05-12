@@ -51,121 +51,6 @@ var ballot = appSetBallot();
 var clients = [];
 var hostPin = appSetHostPin();
 
-awardsIO.on('connection', (socket) => {
-  awardsIO.emit('appConnected', {
-    categories: data.categories,
-  }, () => {
-    console.log('[IO] Awards connected:', socket.id);
-  });
-});
-
-clientIO.use((socket, next) => {
-  var auth = socket.handshake.auth;
-
-  if (auth.name) {
-    socket.name = auth.name.toLowerCase();
-    
-    next();
-  } else {
-    next(new Error('name not found'));
-  }
-});
-
-clientIO.on('connection', (socket) => {
-  clientConnection(socket);
-
-  socket.on('clientBallotEdit', () => {
-    appGetObject(clients, 'name', socket).then((client) => {
-      client.voted = false;
-
-      console.log('[IO] Client editing ballot:', socket.name);
-    }).then(() => {
-      hostClients();
-    });
-  });
-
-  socket.on('clientBallotSubmit', (scores) => {
-    dbInsertVote(socket, scores);
-
-    console.log('[IO] Client submitted ballot:', [socket.name, scores]);
-  });
-
-  socket.on('clientGNBB', () => {
-    dbInsertGNBP(socket);
-
-    console.log('[IO] Client clicked GNBB:', socket.name);
-  });
-
-  socket.on('disconnect', (reason) => {
-    appGetObject(clients, 'name', socket).then((client) => {
-      client.connected = socket.connected;
-
-      console.log('[IO] Client disconnected:', [socket.name, reason]);
-    }).then(() => {
-      hostClients();
-    });
-  });
-});
-
-hostIO.use((socket, next) => {
-  var auth = socket.handshake.auth;
-
-  if (auth.pin === hostPin) {  
-    next();
-  } else {
-    next(new Error('pin incorrect'));
-  }
-});
-
-hostIO.on('connection', (socket) => {
-  hostConnection(socket);
-
-  socket.on('hostAwardsCalculate', () => {
-    awardsCategory();
-    awardsGNBP();
-    awardsTotal();
-  });
-
-  socket.on('hostBallotClose', () => {
-    if (ballot.open) {
-      ballot = appSetBallot();
-
-      clients.map((client) => { 
-        client.voted = false;
-      });
-
-      clientBallot();
-      hostBallot();
-      hostClients();
-
-      console.log('[IO] Host closed ballot');
-    } else {
-      console.log('[IO] Error ballot not open');
-    }
-  });
-
-  socket.on('hostBallotOpen', (contestant) => {
-    appGetObject(data.contestants, 'key', contestant).then((contestant) => {
-      ballot.contestant = contestant;
-      ballot.open = true;
-
-      console.log('[IO] Host opened ballot:', ballot.contestant);
-    }, () => {
-      console.log('[IO] Error contestant not found');
-    }).then(async () => {
-      for (var client of clients) {        
-        await dbQueryClient(client, ballot.contestant).then((rows) => {
-          client.voted = rows.length > 0;
-        });
-      }
-
-      clientBallot();
-      hostBallot();
-      hostClients();
-    });
-  });
-});
-
 /**
  * initialize app
  */
@@ -220,23 +105,6 @@ function appSetBallot() {
  */
  function appSetHostPin() {
   return Math.floor(Math.random() * 9000 + 1000);
-}
-
-/**
- * get client data from socket
- */
-function clientFind(socket) {
-  var found = clients.find((client) => {
-    return client.name === socket.name;
-  });
-
-  return new Promise((resolve, reject) => {
-    if (found) {
-      resolve(found);
-    } else {
-      reject();
-    }
-  });
 }
 
 /**
@@ -500,7 +368,7 @@ function awardsTotal() {
 /**
  * emit ballot to client(s)
  */
-function clientBallot(socket = undefined) {
+async function clientBallot(socket = undefined) {
   if (socket) {
     socket.emit('appBallot', ballot);
 
@@ -514,8 +382,8 @@ function clientBallot(socket = undefined) {
   } else {
     clientIO.emit('appBallot', ballot);
 
-    for (var [id, socket] of clientIO.sockets) {        
-      dbQueryClient(socket, ballot.contestant).then((rows) => {
+    for (var [_, socket] of clientIO.sockets) {  
+      await dbQueryClient(socket, ballot.contestant).then((rows) => {
         if (rows.length > 0) {
           socket.emit('appBallotScore', rows[0]);
         } else {
@@ -627,5 +495,122 @@ function hostScores() {
 }
 
 __initialize();
+
+awardsIO.on('connection', () => {
+  awardsIO.emit('appConnected', {
+    categories: data.categories,
+  });
+});
+
+clientIO.use((socket, next) => {
+  var auth = socket.handshake.auth;
+
+  if (auth.name) {
+    socket.name = auth.name.toLowerCase();
+    
+    next();
+  } else {
+    next(new Error('name not found'));
+  }
+});
+
+clientIO.on('connection', (socket) => {
+  clientConnection(socket);
+
+  socket.on('clientBallotEdit', () => {
+    appGetObject(clients, 'name', socket).then((client) => {
+      client.voted = false;
+
+      console.log('[IO] Client editing ballot:', [socket.name, ballot.contestant.key]);
+    }).then(() => {
+      hostClients();
+    });
+  });
+
+  socket.on('clientBallotSubmit', (scores) => {
+    dbInsertVote(socket, scores);
+
+    console.log('[IO] Client submitted ballot:', [socket.name, scores]);
+  });
+
+  socket.on('clientGNBB', () => {
+    dbInsertGNBP(socket);
+
+    console.log('[IO] Client clicked GNBB:', socket.name);
+  });
+
+  socket.on('disconnect', (reason) => {
+    appGetObject(clients, 'name', socket).then((client) => {
+      client.connected = socket.connected;
+
+      console.log('[IO] Client disconnected:', [socket.name, reason]);
+    }).then(() => {
+      hostClients();
+    });
+  });
+});
+
+hostIO.use((socket, next) => {
+  var auth = socket.handshake.auth;
+
+  if (auth.pin === hostPin) {  
+    next();
+  } else {
+    next(new Error('pin incorrect'));
+  }
+});
+
+hostIO.on('connection', (socket) => {
+  hostConnection(socket);
+
+  socket.on('hostAwardsCalculate', () => {
+    awardsCategory();
+    awardsGNBP();
+    awardsTotal();
+  });
+
+  socket.on('hostBallotClose', () => {
+    if (ballot.open) {
+      ballot = appSetBallot();
+
+      clients.map((client) => { 
+        client.voted = false;
+      });
+
+      clientBallot();
+      hostBallot();
+      hostClients();
+
+      console.log('[IO] Host closed ballot');
+    } else {
+      console.log('[IO] Error ballot not open');
+    }
+  });
+
+  socket.on('hostBallotOpen', (contestant) => {
+    appGetObject(data.contestants, 'key', contestant).then((contestant) => {
+      ballot.contestant = contestant;
+      ballot.open = true;
+
+      console.log('[IO] Host opened ballot:', ballot.contestant);
+    }, () => {
+      console.log('[IO] Error contestant not found');
+    }).then(async () => {
+      for (var client of clients) {        
+        await dbQueryClient(client, ballot.contestant).then((rows) => {
+          client.voted = rows.length > 0;
+        });
+      }
+
+      clientBallot();
+      hostBallot();
+      hostClients();
+    });
+  });
+
+  socket.on('disconnect', (reason) => {
+    console.log('[IO] Client disconnected:', [socket.id, reason]);
+  });
+});
 
 module.exports = { app: app, server: httpServer };
