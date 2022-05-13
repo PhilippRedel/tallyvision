@@ -21,7 +21,7 @@ var db = new sqlite3.Database('./' + new Date().toISOString().substring(0, 10) +
 // app variables
 var appBallot = {};
 var appCategories = require('./categories');
-var appContestants = require('./contestants/2021');
+var appContestants = require('./contestants/2022');
 var appHost = hostID();
 var appVoters = [];
 
